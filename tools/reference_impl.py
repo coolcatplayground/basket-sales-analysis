@@ -222,11 +222,14 @@ def analyse(rows, products, start, end, pc):
 
 
 if __name__ == "__main__":
-    base = sys.argv[1]
+    here = os.path.dirname(os.path.abspath(__file__))
+    base = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.path.dirname(here)
+    scenarios_path = sys.argv[2] if len(sys.argv) > 2 else os.path.join(here, "scenarios.json")
+
     orders = load(os.path.join(base, "data", "orders_demo.csv"))
-    with open(base + "/data/products_demo.csv", encoding="utf-8-sig") as f:
+    with open(os.path.join(base, "data", "products_demo.csv"), encoding="utf-8-sig") as f:
         products = [{"code": r["商品コード"], "name": r["商品名称"]} for r in csv.DictReader(f)]
-    scenarios = json.load(open(sys.argv[2], encoding="utf-8"))
+    scenarios = json.load(open(scenarios_path, encoding="utf-8"))
     out = {}
     for s in scenarios:
         out[s["label"]] = analyse(list(orders), products, s["start"], s["end"], s["product"])

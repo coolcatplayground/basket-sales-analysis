@@ -2,8 +2,16 @@
 const fs = require('fs');
 const path = require('path');
 
-const base = process.argv[2];
-const scenarios = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+/*
+ * Resolve to an absolute path before anything else: require() reads a bare relative path
+ * like 'js/kpi.js' as a package name, so passing '.' as the base fails with
+ * MODULE_NOT_FOUND — which is exactly how this broke in CI while passing locally.
+ */
+const base = path.resolve(process.argv[2] || path.join(__dirname, '..'));
+const scenarios = JSON.parse(
+  fs.readFileSync(path.resolve(process.argv[3] || path.join(__dirname, 'scenarios.json')),
+                  'utf8')
+);
 
 global.window = global;
 require(path.join(base, 'js', 'kpi.js'));
