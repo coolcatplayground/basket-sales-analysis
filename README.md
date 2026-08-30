@@ -192,7 +192,7 @@ columns against this workbook and its stats engine analyses the result without m
 | `js/i18n.js` | The Japanese and English copy, and the language switch |
 | `EC_Sales_Basket_Analysis_Demo.xlsx` | The same logic as worksheet formulas over a local table |
 | `data/orders_demo.csv` | The synthetic dataset — 6,824 order lines, 1,900 customers, 4,106 orders |
-| `data/products_demo.csv` | The product master, 30 products |
+| `data/products_demo.csv` | The product master — 30 products, with an English gloss for the demo page |
 
 The production layer — the Power Query (M) section, the native T-SQL it sends, and the VBA refresh
 macros — is not published here. It runs against an internal SQL Server and is quoted in this README
@@ -200,6 +200,19 @@ only where a fragment is readable on its own.
 
 Both demos reproduce the logic above without a database or credentials, and their outputs were
 verified against an independent implementation of the same specification.
+
+### The demo catalogue
+
+The synthetic data is a fictional cat-supply store — 30 products across care, food, health,
+treats and services (`CT` / `CF` / `CH` / `CS` / `CE`), on the same footing as the cat catalogue
+in the seasonal analyzer, so the two tools read as one portfolio rather than two unrelated
+datasets. Several products ship in two sizes (`CT101` / `CT102` paw balm, `CF101` / `CF102` tuna
+diet), which is what gives the co-purchase tables something to say.
+
+Nothing about the numbers depends on the labels: the catalogue was renamed as a bijection over
+codes and names, and every figure — the summary measures, every monthly row, every cohort row and
+both TOP10 tables, across eight parameter sets — was checked to come out identical under that
+mapping.
 
 ### Running the browser demo
 
@@ -219,7 +232,7 @@ no connection, no credentials.
 |---|---|---|
 | `C6` | StartDate | `YYYYMMDD`, e.g. `20250121` |
 | `C7` | EndDate | `YYYYMMDD`, e.g. `20260620` |
-| `C8` | 商品コード | a product code such as `SK106`, or `All` for the whole catalogue |
+| `C8` | 商品コード | a product code such as `CT106`, or `All` for the whole catalogue |
 
 The sheets behind it: `KPI1_SUMMARY` / `KPI1_MONTHLY` (the sales roll-up and its month-by-month
 trend), `KPI2_SUMMARY` (the first-purchase cohort), `TOP10_1ST` / `TOP10_2ND` (the two co-purchase

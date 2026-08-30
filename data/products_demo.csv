@@ -1,31 +1,31 @@
-﻿商品コード,商品名称
-EV101,Seminar Ticket A
-EV102,Seminar Ticket S
-EV103,Workshop Ticket
-EV104,Online Course Pass
-EV105,Annual Member Pass
-KT101,Dashi & Nutrition Soup 500g
-KT102,Dashi & Nutrition Soup 100g
-KT103,Cast Iron Plate S
-KT104,Ceramic Filter
-KT105,Bamboo Ladle
-KT106,Storage Jar 1L
-SK101,Gold Cream 100g
-SK102,Gold Cream 10g
-SK103,Whitening Lotion 190ml
-SK104,Foam Soap 300ml
-SK105,Face Brush
-SK106,Ear Tape 40p
-SK107,UV Milk 50ml
-SK108,Hand Cream 60g
-SP101,Multi Vitamin 180ct
-SP102,Vegetable Powder 180ct
-SP103,Collagen Powder 250g
-SP104,Omega-3 Softgel 120ct
-SP105,Iron + Folate 90ct
-SP106,Probiotic 60ct
-TE101,Hojicha Blend 200g
-TE102,Genmaicha Blend 200g
-TE103,Herbal Night Tea 30bags
-TE104,Barley Tea 500g
-TE105,Matcha Latte Mix 300g
+﻿商品コード,商品名称,商品名称_EN
+CE101,しつけ教室チケット A,Training Class Ticket A
+CE102,しつけ教室チケット S,Training Class Ticket S
+CE103,グルーミング講座,Grooming Workshop
+CE104,オンライン相談パス,Online Consult Pass
+CE105,年間メンバーパス,Annual Member Pass
+CF101,総合栄養食 まぐろ 500g,Complete Diet Tuna 500g
+CF102,総合栄養食 まぐろ 100g,Complete Diet Tuna 100g
+CF103,陶器のごはん皿 S,Ceramic Bowl S
+CF104,給水器フィルター,Water Fountain Filter
+CF105,竹のフードスクープ,Bamboo Food Scoop
+CF106,フードストッカー 1L,Food Storage Jar 1L
+CT101,肉球バーム 100g,Paw Balm 100g
+CT102,肉球バーム 10g,Paw Balm 10g
+CT103,被毛ケアローション 190ml,Coat Care Lotion 190ml
+CT104,もこもこ泡シャンプー 300ml,Foaming Shampoo 300ml
+CT105,ふわもこブラシ,Grooming Brush
+CT106,耳そうじシート 40枚,Ear Wipes 40p
+CT107,デンタルジェル 50ml,Dental Gel 50ml
+CT108,毛玉ケアジェル 60g,Hairball Care Gel 60g
+CH101,猫用マルチビタミン 180粒,Multivitamin 180ct
+CH102,毛玉ケアパウダー 180回分,Hairball Care Powder 180 servings
+CH103,関節ケアコラーゲン 250g,Joint Collagen 250g
+CH104,オメガ3ソフトカプセル 120粒,Omega-3 Softgel 120ct
+CH105,鉄分＋葉酸タブレット 90粒,Iron + Folate 90ct
+CH106,腸内フローラ乳酸菌 60粒,Probiotic 60ct
+CS101,かつおチップス 200g,Bonito Chips 200g
+CS102,ささみチップス 200g,Chicken Chips 200g
+CS103,またたびスティック 30本,Matatabi Sticks 30p
+CS104,減塩にぼし 500g,Dried Sardines 500g
+CS105,ミルク仕立ておやつ 300g,Milky Treat Mix 300g

@@ -321,12 +321,23 @@
 
   /* --- parameters ------------------------------------------------------- */
 
+  /*
+   * The master carries a Japanese 商品名称 and an English gloss; the code is the same in
+   * both. Everything downstream just reads `.name`, so the language is resolved here.
+   */
+  function localizedProducts() {
+    var en = I18N.lang() === 'en';
+    return state.products.map(function (p) {
+      return { code: p.code, name: en && p.nameEn ? p.nameEn : p.name };
+    });
+  }
+
   function currentParams() {
     return {
       start: fromInputDate($('start').value) || DEFAULTS.start,
       end: fromInputDate($('end').value) || DEFAULTS.end,
       productCode: $('product').value || DEFAULTS.product,
-      products: state.products
+      products: localizedProducts()
     };
   }
 
@@ -359,7 +370,7 @@
     all.value = 'All';
     all.textContent = t('productAll');
     select.appendChild(all);
-    state.products.forEach(function (p) {
+    localizedProducts().forEach(function (p) {
       var opt = document.createElement('option');
       opt.value = p.code;
       opt.textContent = p.code + ' — ' + p.name;
@@ -434,7 +445,7 @@
         };
       });
       var products = parseCsv(texts[1]).map(function (r) {
-        return { code: r['商品コード'], name: r['商品名称'] };
+        return { code: r['商品コード'], name: r['商品名称'], nameEn: r['商品名称_EN'] };
       });
       boot(orders, products);
     }).catch(function (err) {
