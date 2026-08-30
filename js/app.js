@@ -472,6 +472,8 @@
   function writeUrl(params) {
     if (!window.history || !history.replaceState) return;
     var q = [];
+    /* a pinned language stays pinned across parameter changes */
+    if (I18N.pinnedInUrl()) q.push('lang=' + I18N.lang());
     if (params.start !== DEFAULTS.start) q.push('start=' + params.start);
     if (params.end !== DEFAULTS.end) q.push('end=' + params.end);
     if (params.productCode !== DEFAULTS.product) q.push('product=' + params.productCode);

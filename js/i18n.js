@@ -327,8 +327,18 @@
     return s;
   }
 
-  /* Browser preference decides the first view; an explicit choice outranks it. */
+  function fromUrl() {
+    var m = /[?&]lang=(ja|en)\b/.exec(location.search);
+    return m ? m[1] : null;
+  }
+
+  /*
+   * ?lang= wins, so a link can pin the language the reader lands in; then a choice they
+   * made earlier on this device; then what the browser asks for.
+   */
   function initial() {
+    var pinned = fromUrl();
+    if (pinned) return pinned;
     var stored = null;
     try { stored = localStorage.getItem(STORE_KEY); } catch (e) { /* private mode */ }
     if (stored === 'ja' || stored === 'en') return stored;
@@ -378,6 +388,7 @@
     set: set,
     mount: mount,
     onChange: onChange,
-    lang: function () { return current; }
+    lang: function () { return current; },
+    pinnedInUrl: function () { return fromUrl() !== null; }
   };
 })(window);

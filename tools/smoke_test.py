@@ -6,8 +6,9 @@ broken selector or a script that throws on load — the suite would stay green w
 showed nothing. This serves the folder, opens it in headless Chrome, lets the scripts run,
 and then asserts against the DOM that came out.
 
-Two runs, one per language, because the page picks its language from the browser and the
-strings are wired separately from the numbers.
+Two runs, one per language. The language is pinned with ?lang= rather than through the
+browser's own locale: whether a --lang flag reaches navigator.language varies by platform,
+and a test that depends on that fails for reasons that have nothing to do with the page.
 
 No browser-automation dependency: Chrome's own --dump-dom prints the DOM after scripts have
 run, which is all this needs. Uncaught errors are caught through the page's own error
@@ -55,15 +56,16 @@ def serve(port):
     return httpd
 
 
-def dump_dom(chrome, url, lang):
+def dump_dom(chrome, url):
     profile = tempfile.mkdtemp(prefix='smoke-profile-')
     try:
         proc = subprocess.run([
-            chrome, '--headless=new', '--disable-gpu', '--no-sandbox', '--no-first-run',
-            '--user-data-dir=' + profile, '--lang=' + lang,
+            chrome, '--headless=new', '--disable-gpu', '--no-sandbox',
+            '--disable-dev-shm-usage',   # small /dev/shm on CI containers crashes the tab
+            '--no-first-run', '--user-data-dir=' + profile,
             '--virtual-time-budget=10000', '--dump-dom', url
         ], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120)
-        return proc.stdout or ''
+        return proc.stdout or '', proc.returncode, (proc.stderr or '').strip()
     finally:
         shutil.rmtree(profile, ignore_errors=True)
 
@@ -105,18 +107,23 @@ def main():
     port = free_port()
     httpd = serve(port)
     url = 'http://127.0.0.1:%d/index.html' % port
+    print('serving : %s' % url)
     failures = []
 
     try:
         for lang, expectations in CASES:
-            dom = dump_dom(chrome, url, lang)
+            dom, code, err = dump_dom(chrome, url + '?lang=' + lang)
             if not dom.strip():
-                failures.append('%s: the browser returned nothing' % lang)
+                # say why, so a CI failure does not need a local reproduction
+                failures.append('%s: the browser returned no DOM (exit %s)%s'
+                                % (lang, code, ('\n    ' + err[:800]) if err else ''))
                 continue
 
             for what, needle in expectations:
                 if needle not in dom:
                     failures.append('%s: %s is missing (%r)' % (lang, what, needle))
+            if err:
+                print('  (chrome stderr: %s)' % err.splitlines()[0][:120])
 
             for bad in FORBIDDEN:
                 if bad in dom:

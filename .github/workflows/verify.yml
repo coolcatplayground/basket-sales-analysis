@@ -6,6 +6,8 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Each check is its own step, so a failure names itself in the run summary rather than
+# hiding inside one long log. `python tools/verify.py` runs the same set locally.
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -29,11 +31,28 @@ jobs:
         with:
           chrome-version: stable
 
-      # Checks the engine against an independent implementation of the same spec, checks
-      # productScan against compute() product by product, pins the 月別推移 month rows to
-      # the workbook's formulas, opens the hand-written .xlsx export to confirm it still
-      # satisfies the analyzer's column contract, and loads the page in both languages.
-      - name: Run the checks
+      - name: Versions
+        run: |
+          node --version
+          python --version
+          "${{ steps.chrome.outputs.chrome-path }}" --version || google-chrome --version
+
+      - name: Engine vs the independent Python reference
+        run: |
+          node tools/run_engine.js . tools/scenarios.json > /tmp/engine.json
+          python tools/reference_impl.py . tools/scenarios.json > /tmp/reference.json
+          python tools/compare.py /tmp/engine.json /tmp/reference.json
+
+      - name: productScan vs compute(), per product
+        run: node tools/check_product_scan.js
+
+      - name: Month rows vs the workbook formulas
+        run: node tools/check_month_rows.js
+
+      - name: The exported .xlsx against the analyzer contract
+        run: python tools/check_xlsx_export.py
+
+      - name: The page renders, in both languages
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
-        run: python tools/verify.py
+        run: python tools/smoke_test.py
