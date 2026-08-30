@@ -73,10 +73,6 @@
                'ヘッダー行が両ツールの契約です。アナライザーはシート名を商品名として読むため、' +
                '.xlsx は商品名をシート名にして書き出します（ライブラリなしで生成しています）。',
 
-      parityNote: '<strong>ワークブック準拠の挙動:</strong> ' +
-        '月度行は開始日の暦月から採番される一方、数値は月度（21日締め）で集計されます。' +
-        '開始日が21日以降のときは 1 か月ずれるため、先頭行が空になり、末尾の月度が 1 つ落ちます。' +
-        '開始日を20日以前にすると解消します。',
 
       k3Head: '商品別 獲得力',
       k3HeadEm: 'Which products acquire customers',
@@ -223,11 +219,6 @@
                'name, so the .xlsx is written with the product as its sheet name — by hand, ' +
                'with no library.',
 
-      parityNote: '<strong>Workbook parity:</strong> the month rows are seeded from the calendar ' +
-        'month of the start date, while the figures are bucketed by accounting month (the 21st ' +
-        'onward belongs to the next month). When the period starts on the 21st or later the two ' +
-        'are one month out of step, so the block opens with an empty row and stops one month ' +
-        'early. Starting on or before the 20th avoids it.',
 
       k3Head: 'Which products acquire customers',
       k3HeadEm: '商品別 獲得力',

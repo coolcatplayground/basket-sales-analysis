@@ -24,6 +24,11 @@ so a particular view can be linked to directly —
 
 ![Which products acquire customers: revenue rank against acquisition rank](docs/screenshot-products.png)
 
+On the demo data the argument comes out concrete: **CT108 毛玉ケアジェル 60g ranks 14th on revenue
+and 7th on customers acquired.** Nothing on a revenue report would make you look at it twice, and
+roughly half the customers it brings in come back. That gap is the whole reason the tool follows a
+product from a customer's first order rather than reading its sales line.
+
 ---
 
 ## The problem
@@ -215,6 +220,7 @@ columns against this workbook and its stats engine analyses the result without m
 | `js/i18n.js` | The Japanese and English copy, and the language switch |
 | `js/xlsx.js` | A minimal `.xlsx` writer — zip and XML by hand, no library |
 | `tools/` | The verification suite: `python tools/verify.py` |
+| `LICENSE` | MIT |
 | `.github/workflows/verify.yml` | Runs that suite on every push |
 | `docs/` | The screenshots used above |
 | `EC_Sales_Basket_Analysis_Demo.xlsx` | The same logic as worksheet formulas over a local table |
@@ -273,7 +279,7 @@ flag; if a viewer ever shows blanks, `Ctrl+Alt+F9` forces the same pass.
 
     python tools/verify.py
 
-Three checks, run here and in CI on every push:
+Five checks, run here and in CI on every push:
 
 **The engine against an independent implementation.** `js/kpi.js` is a column-by-column port of the
 workbook — each block names the sheet and column it came from, so the two can be read side by side.
@@ -290,10 +296,25 @@ every product in the basket, rather than re-running the cohort thirty times. Tha
 legitimate if it lands on the same numbers, so `tools/check_product_scan.js` asserts it does, product
 by product, against `compute()`.
 
+**The month rows against the workbook's formulas.** Which months the 月別推移 block contains is a
+contract, not a detail — it is what the analyzer receives. `tools/check_month_rows.js` pins the
+first month, the last month and the count for seven windows, including ones that start on the 21st,
+sit inside a single fiscal month, or run past the sheet's 36-row limit. The expectations were worked
+out by hand from `CONFIG!B4`/`B5` and `KPI1_MONTHLY!An`, not from the engine, which is the point:
+an earlier port of this block seeded the rows from the calendar month instead of the fiscal one and
+shifted every row by one, and because the Python reference was written from the same misreading the
+two agreed with each other perfectly. Only a check written from the workbook could catch it.
+
 **The export against the analyzer's contract.** The hand-written `.xlsx` is opened with `openpyxl`
 and checked for the sheet name, the seven header strings and numeric cell types.
 
-### The workbook's own behaviour, reproduced
+**The page itself.** Everything above proves the arithmetic; none of it would notice a renamed
+element id or a script that throws on load. `tools/smoke_test.py` serves the folder, opens it in
+headless Chrome in each language, and asserts against the rendered DOM — the figures, the chart
+marks, the table rows, and the absence of the page's own error banner. No automation library:
+Chrome's `--dump-dom` prints the DOM once the scripts have run.
+
+### One behaviour worth knowing about
 
 `js/kpi.js` is a column-by-column port of the workbook — each block names the sheet and column it
 came from, so the two can be read side by side. To check the port, the same specification was
@@ -304,19 +325,10 @@ seven parameter sets — whole catalogue and single product, wide and narrow win
 containing no orders at all — covering every figure on the page: the eight summary measures, every
 monthly row, all 123 cohort rows, and both TOP10 tables. All values agree exactly.
 
-Two things the demo reproduces rather than corrects, because the workbook is the specification:
-
 **①売上集計 does not filter on the product code.** The product code selects the basket for ②; the
 roll-up is a period filter over the whole catalogue. That is what the dashboard's own instructions
-say, and it is why picking a product leaves the top row of figures unchanged.
-
-**The monthly block can open with an empty row and stop a month early.** The month rows are seeded
-from the calendar month of the start date, while the figures are bucketed by fiscal month (21st
-onward belongs to the next month). When the period starts on the 21st or later the two are one
-month out of step — which matters, because this block is the export contract feeding the seasonal
-analyzer. The demo flags it in place instead of hiding it; setting a start date on or before the
-20th avoids it, and seeding the row labels from the fiscal month of the start date would fix it at
-source.
+say, and it is why picking a product leaves the top row of figures unchanged. The demo reproduces
+this rather than correcting it, because the workbook is the specification.
 
 ## Sanitisation
 

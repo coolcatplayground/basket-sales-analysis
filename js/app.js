@@ -176,26 +176,6 @@
       });
       body.appendChild(tr);
     });
-    renderParityNote(r);
-  }
-
-  /*
-   * The workbook seeds its month rows from the raw start date, but buckets the figures
-   * by fiscal month. When the period starts on the 21st or later the two are one month
-   * out of step, so the block opens with an empty row and stops one month early. The
-   * demo reproduces that rather than hiding it — but says so, because the same block is
-   * the export contract feeding the seasonal analyzer.
-   */
-  function renderParityNote(r) {
-    var note = $('parity-note');
-    var first = r.monthly[0];
-    var startDay = KPI.ymd(currentParams().start).d;
-    if (first && startDay >= 21 && first.lines === 0 && first.customers === 0) {
-      note.hidden = false;
-      note.innerHTML = t('parityNote');
-    } else {
-      note.hidden = true;
-    }
   }
 
   function renderKpi2(r) {

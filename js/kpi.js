@@ -46,10 +46,19 @@
    * The accounting month closes on the 20th, so the 21st onward belongs to the next month:
    * =IF(DAY(date)>=21, EDATE(date,1), date), labelled TEXT(...,"yy")&"_"&TEXT(...,"mm").
    */
-  function fiscalLabel(dateInt) {
+  function fiscalYM(dateInt) {
     var p = ymd(dateInt);
-    var b = p.d >= 21 ? edate(p.y, p.m, p.d, 1) : p;
+    return p.d >= 21 ? edate(p.y, p.m, p.d, 1) : p;
+  }
+
+  function fiscalLabel(dateInt) {
+    var b = fiscalYM(dateInt);
     return monthLabel(b.y, b.m);
+  }
+
+  /* Months as a single running index, so "is this month past that one" is one comparison. */
+  function monthIndex(y, m) {
+    return y * 12 + (m - 1);
   }
 
   function dayNumber(dateInt) {
@@ -255,24 +264,28 @@
   }
 
   /*
-   * KPI1_MONTHLY!A2:J37 — up to 36 month rows, generated forward from the start date and
-   * cut off at the end date: =IF(EDATE(CONFIG!$B$4,n)>CONFIG!$B$5,"",...).
+   * KPI1_MONTHLY!A2:J37 — up to 36 month rows: =IF(EDATE(CONFIG!$B$4,n)>CONFIG!$B$5,"",...).
    *
-   * The rows come from the calendar months the period spans, while the figures are matched
-   * on the fiscal month label, so a period starting after the 20th opens with an empty row.
-   * That is the workbook's behaviour and it is reproduced rather than tidied away.
+   * CONFIG!$B$4 and $B$5 are not the raw dates. They are 開始月度の基準日 / 終了月度の基準日 —
+   * the FISCAL month of each bound, normalised to the first of the month:
+   *   =DATE(YEAR(IF(DAY(B2)>=21,EDATE(B2,1),B2)), MONTH(...), 1)
+   * So the rows run over the fiscal months the period actually spans, which is what makes
+   * them line up with the fiscal month the figures are bucketed by. Seeding from the raw
+   * calendar month instead would shift the whole block by one whenever the period starts on
+   * the 21st or later — an empty leading row, and the newest month dropped off the end.
    */
   function kpi1Monthly(rows, inPeriod, seenMonth, start, end) {
-    var sp = ymd(start);
-    var endDay = serial(ymd(end));
+    var from = fiscalYM(start);
+    var to = fiscalYM(end);
+    var first = monthIndex(from.y, from.m);
+    var last = monthIndex(to.y, to.m);
     var buckets = new Map();
     var order = [];
 
     for (var n = 0; n < 36; n++) {
-      var b = edate(sp.y, sp.m, sp.d, n);
-      if (serial(b) > endDay) break;
-      var label = monthLabel(b.y, b.m);
-      if (buckets.has(label)) continue;
+      var idx = first + n;
+      if (idx > last) break;
+      var label = monthLabel(Math.floor(idx / 12), (idx % 12) + 1);
       buckets.set(label, {
         label: label, revenue: 0, units: 0, lines: 0,
         customers: 0, newCustomers: 0, existingCustomers: 0
@@ -485,6 +498,7 @@
     compute: compute,
     productScan: productScan,
     fiscalLabel: fiscalLabel,
+    fiscalYM: fiscalYM,
     monthLabel: monthLabel,
     edate: edate,
     ymd: ymd

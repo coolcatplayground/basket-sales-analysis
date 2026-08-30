@@ -131,17 +131,23 @@ def analyse(rows, products, start, end, pc):
     summary["avgOrderValue"] = summary["revenue"] / summary["lines"] if summary["lines"] else 0
     summary["avgQty"] = summary["units"] / summary["lines"] if summary["lines"] else 0
 
-    # month rows generated from the start date forward, cut off at the end date
-    sy, sm, sd = ymd(start)
-    labels, seen_labels = [], set()
+    # Month rows run over the FISCAL months the period spans — CONFIG!B4/B5 in the
+    # workbook are 開始月度の基準日 / 終了月度の基準日, not the raw dates.
+    def fiscal_ym(n):
+        y, m, d = ymd(n)
+        if d >= 21:
+            m += 1
+            if m == 13:
+                y, m = y + 1, 1
+        return y * 12 + (m - 1)
+
+    first, last = fiscal_ym(start), fiscal_ym(end)
+    labels = []
     for n in range(36):
-        y, m, d = edate(sy, sm, sd, n)
-        if (y, m, d) > ymd(end):
+        idx = first + n
+        if idx > last:
             break
-        lab = "%02d_%02d" % (y % 100, m)
-        if lab not in seen_labels:
-            seen_labels.add(lab)
-            labels.append(lab)
+        labels.append("%02d_%02d" % ((idx // 12) % 100, idx % 12 + 1))
 
     monthly = []
     for lab in labels:

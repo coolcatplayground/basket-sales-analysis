@@ -328,14 +328,6 @@ button:focus-visible, summary:focus-visible {
   background: var(--series-1); opacity: 0.85;
 }
 
-.parity-note {
-  margin: 14px 0 0; padding: 10px 12px;
-  font-size: 13px; color: var(--text-secondary);
-  background: var(--surface-2);
-  border-left: 2px solid var(--axis);
-  border-radius: 0 6px 6px 0;
-}
-
 .top-grid {
   display: grid; gap: 24px;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
