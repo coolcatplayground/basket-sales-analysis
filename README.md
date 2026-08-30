@@ -13,7 +13,8 @@ through to what they bought the second time.
 **Live demo → <https://coolcatplayground.github.io/basket-sales-analysis/>**
 The same calculations running in the browser over the synthetic dataset — change the dates or the
 product code and the KPIs, the two co-purchase tables and the export block all recalculate. No
-Excel, no database, no sign-in.
+Excel, no database, no sign-in. The interface reads in Japanese or English; the switch is in the
+top-right corner, and it opens in whichever your browser asks for.
 
 ---
 
@@ -175,7 +176,9 @@ merges by year-month, so re-exporting the full history is safe.
 
 The demo workbook carries a dedicated `EXPORT` sheet in exactly this shape, and the browser demo
 renders the same block with copy-to-clipboard and CSV buttons, so the handoff can be walked through
-without opening Excel. The handoff is verified end to end — the analyzer's parser resolves all seven
+without opening Excel. Those seven headers are the one part of the page the language switch leaves
+alone — they have to match exactly for the analyzer to parse them, so they stay Japanese in both
+languages and the English copy glosses them instead. The handoff is verified end to end — the analyzer's parser resolves all seven
 columns against this workbook and its stats engine analyses the result without modification.
 
 ## Repository contents
@@ -186,6 +189,7 @@ columns against this workbook and its stats engine analyses the result without m
 | `js/kpi.js` | The calculation engine, ported column by column from the workbook |
 | `js/charts.js` | The two SVG charts, hand-rolled so the page stays dependency-free |
 | `js/app.js` | Parameters, rendering, and the export block |
+| `js/i18n.js` | The Japanese and English copy, and the language switch |
 | `EC_Sales_Basket_Analysis_Demo.xlsx` | The same logic as worksheet formulas over a local table |
 | `data/orders_demo.csv` | The synthetic dataset — 6,824 order lines, 1,900 customers, 4,106 orders |
 | `data/products_demo.csv` | The product master, 30 products |

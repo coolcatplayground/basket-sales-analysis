@@ -1,6 +1,7 @@
 /*
  * app.js — loads the demo data, wires the parameters to the engine, renders the result.
  * All arithmetic lives in kpi.js; this file only reads the controls and writes the DOM.
+ * Every user-visible string comes from i18n.js, so a language change re-renders in place.
  */
 (function () {
   'use strict';
@@ -12,6 +13,8 @@
   /* --- small helpers ---------------------------------------------------- */
 
   function $(id) { return document.getElementById(id); }
+
+  function t(key, vars) { return I18N.t(key, vars); }
 
   function fmtInt(n) { return Math.round(n).toLocaleString('en-US'); }
 
@@ -54,7 +57,7 @@
 
   function tiles(host, items) {
     host.textContent = '';
-    var dl = document.createDocumentFragment();
+    var frag = document.createDocumentFragment();
     items.forEach(function (it) {
       var wrap = document.createElement('dl');
       wrap.className = 'tile';
@@ -70,35 +73,34 @@
       }
       wrap.appendChild(dt);
       wrap.appendChild(dd);
-      dl.appendChild(wrap);
+      frag.appendChild(wrap);
     });
-    host.appendChild(dl);
+    host.appendChild(frag);
   }
 
   function renderKpi1(r) {
     var s = r.summary;
     tiles($('kpi1-tiles'), [
-      { label: '売上金額', value: fmtYen(s.revenue) },
-      { label: '購入個数', value: fmtInt(s.units), unit: '点' },
-      { label: '購入件数', value: fmtInt(s.lines), unit: '明細' },
-      { label: '総顧客数', value: fmtInt(s.customers), unit: '人' },
-      { label: '新規顧客数', value: fmtInt(s.newCustomers), unit: '人' },
-      { label: '既存顧客数', value: fmtInt(s.existingCustomers), unit: '人' },
-      { label: '平均注文金額', value: fmtYen(s.avgOrderValue) },
-      { label: '平均購入数量', value: s.avgQty.toFixed(2), unit: '点' }
+      { label: t('tRevenue'), value: fmtYen(s.revenue) },
+      { label: t('tUnits'), value: fmtInt(s.units), unit: t('uItems') },
+      { label: t('tLines'), value: fmtInt(s.lines), unit: t('uLines') },
+      { label: t('tCustomers'), value: fmtInt(s.customers), unit: t('uPeople') },
+      { label: t('tNew'), value: fmtInt(s.newCustomers), unit: t('uPeople') },
+      { label: t('tExisting'), value: fmtInt(s.existingCustomers), unit: t('uPeople') },
+      { label: t('tAov'), value: fmtYen(s.avgOrderValue) },
+      { label: t('tAvgQty'), value: s.avgQty.toFixed(2), unit: t('uItems') }
     ]);
   }
 
   function renderCharts(r) {
     var months = r.monthly;
 
-    var revSeries = [{
-      label: '売上金額', color: 'var(--series-1)',
-      value: function (m) { return m.revenue; }
-    }];
     Charts.render($('chart-revenue'), months, {
-      ariaLabel: '月次売上金額の棒グラフ',
-      series: revSeries,
+      ariaLabel: t('ch1Title'),
+      series: [{
+        label: t('tRevenue'), color: 'var(--series-1)',
+        value: function (m) { return m.revenue; }
+      }],
       max: Math.max.apply(null, months.map(function (m) { return m.revenue; }).concat([1])),
       total: function (m) { return m.revenue; },
       tickFormat: Charts.yenTick,
@@ -106,19 +108,24 @@
       peakFormat: function (v) { return Charts.yenTick(v); },
       tipHtml: function (m) {
         return '<b>' + m.label + '</b>' +
-          '<div class="row"><span>売上金額</span><span class="v">' + fmtYen(m.revenue) + '</span></div>' +
-          '<div class="row"><span>購入件数</span><span class="v">' + fmtInt(m.lines) + '</span></div>' +
-          '<div class="row"><span>総顧客数</span><span class="v">' + fmtInt(m.customers) + '</span></div>';
+          '<div class="row"><span>' + t('tipRevenue') + '</span><span class="v">' +
+          fmtYen(m.revenue) + '</span></div>' +
+          '<div class="row"><span>' + t('tipLines') + '</span><span class="v">' +
+          fmtInt(m.lines) + '</span></div>' +
+          '<div class="row"><span>' + t('tipCustomers') + '</span><span class="v">' +
+          fmtInt(m.customers) + '</span></div>';
       }
     });
 
     var custSeries = [
-      { label: '新規顧客', color: 'var(--series-1)', value: function (m) { return m.newCustomers; } },
-      { label: '既存顧客', color: 'var(--series-2)', value: function (m) { return m.existingCustomers; } }
+      { label: t('legNew'), color: 'var(--series-1)',
+        value: function (m) { return m.newCustomers; } },
+      { label: t('legExisting'), color: 'var(--series-2)',
+        value: function (m) { return m.existingCustomers; } }
     ];
     var custHost = $('chart-customers');
     Charts.render(custHost, months, {
-      ariaLabel: '月次の新規顧客数と既存顧客数の積み上げ棒グラフ',
+      ariaLabel: t('ch2Title'),
       series: custSeries,
       max: Math.max.apply(null, months.map(function (m) { return m.customers; }).concat([1])),
       total: function (m) { return m.customers; },
@@ -128,16 +135,20 @@
       tipHtml: function (m) {
         return '<b>' + m.label + '</b>' +
           '<div class="row"><span class="swatch" style="background:var(--series-1)"></span>' +
-          '<span>新規</span><span class="v">' + fmtInt(m.newCustomers) + '</span></div>' +
+          '<span>' + t('tipNew') + '</span><span class="v">' + fmtInt(m.newCustomers) +
+          '</span></div>' +
           '<div class="row"><span class="swatch" style="background:var(--series-2)"></span>' +
-          '<span>既存</span><span class="v">' + fmtInt(m.existingCustomers) + '</span></div>' +
-          '<div class="row"><span>合計</span><span class="v">' + fmtInt(m.customers) + '</span></div>';
+          '<span>' + t('tipExisting') + '</span><span class="v">' + fmtInt(m.existingCustomers) +
+          '</span></div>' +
+          '<div class="row"><span>' + t('tipTotal') + '</span><span class="v">' +
+          fmtInt(m.customers) + '</span></div>';
       }
     });
-    if (!custHost.previousElementSibling ||
-        !custHost.previousElementSibling.classList.contains('chart-legend')) {
-      Charts.legend(custHost, custSeries);
-    }
+
+    /* drop any previous legend before adding this language's */
+    var prev = custHost.previousElementSibling;
+    if (prev && prev.classList.contains('chart-legend')) prev.remove();
+    Charts.legend(custHost, custSeries);
   }
 
   function renderMonthlyTable(r) {
@@ -172,10 +183,7 @@
     var startDay = KPI.ymd(currentParams().start).d;
     if (first && startDay >= 21 && first.lines === 0 && first.customers === 0) {
       note.hidden = false;
-      note.innerHTML = '<strong>ワークブック準拠の挙動:</strong> ' +
-        '月度行は開始日の暦月から採番される一方、数値は月度（21日締め）で集計されます。' +
-        '開始日が21日以降のときは 1 か月ずれるため、先頭行が空になり、末尾の月度が 1 つ落ちます。' +
-        '開始日を20日以前にすると解消します。';
+      note.innerHTML = t('parityNote');
     } else {
       note.hidden = true;
     }
@@ -184,10 +192,10 @@
   function renderKpi2(r) {
     var c = r.cohorts.total;
     tiles($('kpi2-tiles'), [
-      { label: '初回購入顧客数', value: fmtInt(c.acquired), unit: '人' },
-      { label: 'リピート数', value: fmtInt(c.repeated), unit: '人' },
-      { label: 'リピート率', value: fmtPct(c.repeatRate) },
-      { label: '平均リピート日数', value: fmtDays(c.avgDays), unit: '日' }
+      { label: t('tAcquired'), value: fmtInt(c.acquired), unit: t('uPeople') },
+      { label: t('tRepeated'), value: fmtInt(c.repeated), unit: t('uPeople') },
+      { label: t('tRepeatRate'), value: fmtPct(c.repeatRate) },
+      { label: t('tAvgDays'), value: fmtDays(c.avgDays), unit: t('uDays') }
     ]);
 
     rankTable($('top1st'), r.top1st);
@@ -208,7 +216,7 @@
       });
       body.appendChild(tr);
     });
-    $('cohort-count').textContent = '（' + r.cohorts.rows.length + ' コホート）';
+    $('cohort-count').textContent = t('cohortCount', { n: r.cohorts.rows.length });
   }
 
   function rankTable(table, rows) {
@@ -218,7 +226,7 @@
       var tr = document.createElement('tr');
       var td = document.createElement('td');
       td.colSpan = 4;
-      td.textContent = '該当なし';
+      td.textContent = t('noRows');
       td.style.textAlign = 'center';
       td.style.color = 'var(--text-muted)';
       tr.appendChild(td);
@@ -257,6 +265,7 @@
   }
 
   /* --- export block ----------------------------------------------------- */
+  /* The header row is the analyzer's contract, so it is Japanese in every language. */
 
   function exportRows(r) {
     var head = ['月別推移', '売上金額', '購入個数', '購入件数', '総顧客数', '新規顧客数', '既存顧客数'];
@@ -289,9 +298,8 @@
   function copyExport(button) {
     var text = exportText(state.result, '\t');
     var done = function () {
-      var was = button.textContent;
-      button.textContent = 'コピーしました';
-      setTimeout(function () { button.textContent = was; }, 1600);
+      button.textContent = t('btnCopied');
+      setTimeout(function () { button.textContent = t('btnCopy'); }, 1600);
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text, done); });
@@ -325,7 +333,7 @@
   function recompute() {
     var params = currentParams();
     if (params.start > params.end) {
-      fail('開始日が終了日より後になっています。日付を入れ替えてください。');
+      fail(t('errDates'));
       return;
     }
     $('error-banner').hidden = true;
@@ -336,33 +344,39 @@
     renderMonthlyTable(state.result);
     renderKpi2(state.result);
 
-    var scope = $('kpi2-scope');
-    scope.textContent = params.productCode.toUpperCase() === 'ALL'
-      ? '全商品・全期間コホート。初回購入の伝票をまるごと数えています。'
-      : params.productCode + ' を含む初回購入の伝票を対象にした、全期間コホート。';
+    $('kpi2-scope').textContent = params.productCode.toUpperCase() === 'ALL'
+      ? t('k2ScopeAll')
+      : t('k2ScopeProduct', { code: params.productCode });
   }
 
   /* --- boot ------------------------------------------------------------- */
 
-  function boot(orders, products) {
-    state.products = products;
-    state.base = KPI.buildBase(orders);
-
+  function fillProducts() {
     var select = $('product');
+    var keep = select.value;
+    select.textContent = '';
     var all = document.createElement('option');
     all.value = 'All';
-    all.textContent = 'All — 全商品';
+    all.textContent = t('productAll');
     select.appendChild(all);
-    products.forEach(function (p) {
+    state.products.forEach(function (p) {
       var opt = document.createElement('option');
       opt.value = p.code;
       opt.textContent = p.code + ' — ' + p.name;
       select.appendChild(opt);
     });
+    select.value = keep || DEFAULTS.product;
+  }
+
+  function boot(orders, products) {
+    state.products = products;
+    state.base = KPI.buildBase(orders);
+
+    fillProducts();
 
     $('start').value = toInputDate(DEFAULTS.start);
     $('end').value = toInputDate(DEFAULTS.end);
-    select.value = DEFAULTS.product;
+    $('product').value = DEFAULTS.product;
 
     ['start', 'end', 'product'].forEach(function (id) {
       $(id).addEventListener('change', recompute);
@@ -375,6 +389,12 @@
     });
     $('download-export').addEventListener('click', downloadExport);
     $('copy-export').addEventListener('click', function () { copyExport(this); });
+
+    /* i18n.js has already refreshed the static copy; redraw what data produced. */
+    I18N.onChange(function () {
+      fillProducts();
+      if (state.result) recompute();
+    });
 
     var resizeTimer = null;
     window.addEventListener('resize', function () {
@@ -389,6 +409,7 @@
   }
 
   function load() {
+    I18N.mount();
     Promise.all([
       fetch('data/orders_demo.csv').then(function (r) {
         if (!r.ok) throw new Error('orders_demo.csv: HTTP ' + r.status);
@@ -417,17 +438,14 @@
       });
       boot(orders, products);
     }).catch(function (err) {
-      fail('データを読み込めませんでした (' + err.message + ')。<br>' +
-        'ローカルで開いている場合は <code>file://</code> では fetch がブロックされます。' +
-        'リポジトリのルートで <code>python3 -m http.server 8000</code> を実行し、' +
-        '<code>http://localhost:8000</code> を開いてください。');
+      fail(t('errLoad', { msg: err.message }));
       $('main').setAttribute('aria-busy', 'false');
     });
   }
 
   /* Any uncaught error surfaces at the top of the page instead of failing silently. */
   window.addEventListener('error', function (e) {
-    fail('スクリプトエラー: ' + (e.message || 'unknown'));
+    fail(I18N.t('errScript', { msg: e.message || 'unknown' }));
   });
 
   if (document.readyState === 'loading') {

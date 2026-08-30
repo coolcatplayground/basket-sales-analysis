@@ -48,10 +48,26 @@
     return nice * mag;
   }
 
+  /* Trim trailing zeros so round axis steps read 1.5M rather than 1.50M. */
+  function trim(n, places) {
+    return String(parseFloat(n.toFixed(places)));
+  }
+
+  /*
+   * Money on the y axis, in the units the reader expects: 万 / 億 in Japanese,
+   * K / M / B in English. Both drop the currency mark, which the title carries.
+   */
   function yenTick(v) {
     if (v === 0) return '0';
-    if (v >= 100000000) return (v / 100000000) + '億';
-    if (v >= 10000) return Math.round(v / 10000) + '万';
+    var ja = !window.I18N || I18N.lang() === 'ja';
+    if (ja) {
+      if (v >= 100000000) return trim(v / 100000000, 2) + '億';
+      if (v >= 10000) return Math.round(v / 10000) + '万';
+      return String(v);
+    }
+    if (v >= 1000000000) return trim(v / 1000000000, 2) + 'B';
+    if (v >= 1000000) return trim(v / 1000000, 2) + 'M';
+    if (v >= 1000) return trim(v / 1000, 1) + 'K';
     return String(v);
   }
 
@@ -82,7 +98,7 @@
     if (!rows.length) {
       var empty = document.createElement('p');
       empty.className = 'is-loading';
-      empty.textContent = '該当する月度がありません。';
+      empty.textContent = window.I18N ? I18N.t('chartEmpty') : '';
       host.appendChild(empty);
       return;
     }
