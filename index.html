@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EC 売上集計 ＆ カゴ分析 — ライブデモ</title>
+<meta name="description" content="Browser demo of an Excel/SQL Server sales KPI and first-purchase basket analysis tool, running on synthetic data.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="error-banner" hidden></div>
+
+<header class="page-head">
+  <div class="wrap">
+    <p class="eyebrow">Live demo — synthetic data</p>
+    <h1>EC 売上集計 ＆ カゴ（バスケット）分析</h1>
+    <p class="lede">
+      Sales KPIs and first-purchase basket analysis. The real tool runs on SQL Server through
+      Power Query, Power Pivot and VBA; this page runs the same calculations in the browser over
+      the demo dataset, so you can change the parameters and watch the numbers move without
+      opening Excel.
+    </p>
+    <nav class="head-links">
+      <a href="https://github.com/coolcatplayground/basket-sales-analysis">リポジトリ / Repository</a>
+      <a href="EC_Sales_Basket_Analysis_Demo.xlsx">Excel ブックをダウンロード</a>
+      <a href="data/orders_demo.csv">元データ (CSV)</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" id="main" aria-busy="true">
+
+  <section class="panel controls" aria-labelledby="controls-h">
+    <h2 id="controls-h" class="sr-only">検索条件</h2>
+    <div class="control-row">
+      <label class="field">
+        <span>開始日 <em>StartDate</em></span>
+        <input type="date" id="start" min="2023-12-21" max="2026-06-20">
+      </label>
+      <label class="field">
+        <span>終了日 <em>EndDate</em></span>
+        <input type="date" id="end" min="2023-12-21" max="2026-06-20">
+      </label>
+      <label class="field field-wide">
+        <span>商品コード <em>ProductCode</em></span>
+        <select id="product"></select>
+      </label>
+      <button type="button" id="reset" class="btn-ghost">既定値に戻す</button>
+    </div>
+    <p class="control-note">
+      商品コードは <strong>②カゴ分析</strong> の対象を決めます。①売上集計は期間のみのフィルタで、
+      全商品が対象です — ワークブックと同じ挙動です。
+    </p>
+  </section>
+
+  <section class="panel" aria-labelledby="kpi1-h">
+    <div class="panel-head">
+      <h2 id="kpi1-h"><span class="num">①</span> 売上集計 <em>Sales roll-up</em></h2>
+      <p>期間フィルタ適用。返品（ステータス 14）は減算されます。</p>
+    </div>
+
+    <div class="tiles" id="kpi1-tiles"></div>
+
+    <figure class="chart-figure">
+      <figcaption>
+        <h3>月次売上金額</h3>
+        <p>会計月度ベース（21日締め）。<span class="muted">Net revenue by accounting month.</span></p>
+      </figcaption>
+      <div class="chart-host" id="chart-revenue"></div>
+    </figure>
+
+    <figure class="chart-figure">
+      <figcaption>
+        <h3>新規顧客数 / 既存顧客数</h3>
+        <p>その月度に「新規」だった顧客と、それ以外の顧客。
+          <span class="muted">New vs returning customers, by month.</span></p>
+      </figcaption>
+      <div class="chart-host" id="chart-customers"></div>
+    </figure>
+
+    <div class="table-head">
+      <h3>月別推移 <em>EXPORT block</em></h3>
+      <div class="table-actions">
+        <button type="button" id="copy-export" class="btn-ghost">クリップボードにコピー</button>
+        <button type="button" id="download-export" class="btn-ghost">CSV ダウンロード</button>
+      </div>
+    </div>
+    <p class="table-note">
+      この 7 列がそのまま季節性アナライザーの入力形式になります。ヘッダー行が両ツールの契約です。
+    </p>
+    <div class="table-scroll">
+      <table id="monthly-table" class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">月別推移</th><th scope="col">売上金額</th><th scope="col">購入個数</th>
+            <th scope="col">購入件数</th><th scope="col">総顧客数</th><th scope="col">新規顧客数</th>
+            <th scope="col">既存顧客数</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="parity-note" id="parity-note" hidden></p>
+  </section>
+
+  <section class="panel" aria-labelledby="kpi2-h">
+    <div class="panel-head">
+      <h2 id="kpi2-h"><span class="num">②</span> カゴ分析：初回購入 → 2回目購入
+        <em>First-purchase basket</em></h2>
+      <p id="kpi2-scope">全期間コホート。</p>
+    </div>
+
+    <div class="tiles" id="kpi2-tiles"></div>
+
+    <div class="top-grid">
+      <div>
+        <h3>TOP10_1ST</h3>
+        <p class="table-note">対象商品を含む<strong>初回購入</strong>の伝票に、他に何が入っていたか。
+          伝票の全明細を保持するため、これは本物の併売リストです。</p>
+        <div class="table-scroll">
+          <table id="top1st" class="data-table rank-table">
+            <thead><tr><th scope="col">商品コード</th><th scope="col">商品名称</th>
+              <th scope="col" class="num-col">購入件数</th><th scope="col" class="num-col">売上金額</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <h3>TOP10_2ND</h3>
+        <p class="table-note">その顧客たちが<strong>2回目</strong>に何を買ったか。
+          同じ商品に戻ったのか、隣の棚に移ったのか。</p>
+        <div class="table-scroll">
+          <table id="top2nd" class="data-table rank-table">
+            <thead><tr><th scope="col">商品コード</th><th scope="col">商品名称</th>
+              <th scope="col" class="num-col">購入件数</th><th scope="col" class="num-col">売上金額</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <details class="cohorts">
+      <summary>登録月度コホート別の内訳 <span id="cohort-count" class="muted"></span></summary>
+      <p class="table-note">
+        獲得実績は、その顧客が実際に入会した月に対して読むものです。10 年分の履歴に均して
+        しまうと意味が消えます。
+      </p>
+      <div class="table-scroll table-scroll-tall">
+        <table id="cohort-table" class="data-table">
+          <thead><tr><th scope="col">登録月度</th><th scope="col" class="num-col">初回購入顧客数</th>
+            <th scope="col" class="num-col">リピート数</th><th scope="col" class="num-col">リピート率</th>
+            <th scope="col" class="num-col">平均リピート日数</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+
+  <section class="panel notes" aria-labelledby="notes-h">
+    <h2 id="notes-h">読み方の注意 <em>How to read this</em></h2>
+    <dl>
+      <dt>月度は暦月ではない</dt>
+      <dd>会計月は20日締めなので、21日の売上は<em>翌月</em>に入ります
+        (<code>月度 = if DAY(売上日) &gt;= 21 then month+1 else month</code>)。
+        登録日にも同じ規則を当てて、両者を突き合わせて新規／既存を決めます。</dd>
+
+      <dt>新規 + 既存 ≠ 総顧客数（長い期間では）</dt>
+      <dd>同じ人が、ある月には「新規」で別の月には「既存」になり得ます。月度ごとに判定しているからです。
+        これは不具合ではありませんが、出力を初めて見る人が最初に引っかかる点なので明記しておきます。</dd>
+
+      <dt>売上は返品差引後</dt>
+      <dd>ステータス 11 が完了、14 が返品。除外ではなく符号を付けて合算するので、返品は消えずに引かれます。</dd>
+
+      <dt>「初回購入のカゴ」は伝票まるごと</dt>
+      <dd>フィルタに一致した明細だけでなく、その伝票の全明細を残します。だから併売表が
+        フィルタの言い換えではなく、情報になります。</dd>
+    </dl>
+    <p class="fineprint">
+      本番版は SQL Server 上の約10年・300万行超に対して動き、KPI1 は数秒、KPI2 は2〜20分かかります。
+      このデモは 6,824 行の合成データで、ブラウザ内で即時に再計算します。実データ・実商品コードは
+      一切含まれません。
+    </p>
+  </section>
+</main>
+
+<footer class="page-foot">
+  <div class="wrap">
+    <p>
+      合成データによるデモ。計算ロジックは <code>EC_Sales_Basket_Analysis_Demo.xlsx</code> の各シートを
+      移植したもので、出力は独立実装と突き合わせて検証しています。
+    </p>
+  </div>
+</footer>
+
+<script src="js/kpi.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

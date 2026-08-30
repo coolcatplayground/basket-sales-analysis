@@ -10,6 +10,11 @@ through to what they bought the second time.
 > product codes are published. Server names, database names, file paths and vendor table names in
 > the code samples are replaced with placeholders.
 
+**Live demo → <https://coolcatplayground.github.io/basket-sales-analysis/>**
+The same calculations running in the browser over the synthetic dataset — change the dates or the
+product code and the KPIs, the two co-purchase tables and the export block all recalculate. No
+Excel, no database, no sign-in.
+
 ---
 
 ## The problem
@@ -168,29 +173,43 @@ The workflow is: set the product and period here, copy the block into a sheet na
 product, save, and drop it on the analyzer. The sheet name becomes the product name; the analyzer
 merges by year-month, so re-exporting the full history is safe.
 
-The demo workbook carries a dedicated `EXPORT` sheet in exactly this shape. The handoff is verified
-end to end — the analyzer's parser resolves all seven columns against this workbook and its stats
-engine analyses the result without modification.
+The demo workbook carries a dedicated `EXPORT` sheet in exactly this shape, and the browser demo
+renders the same block with copy-to-clipboard and CSV buttons, so the handoff can be walked through
+without opening Excel. The handoff is verified end to end — the analyzer's parser resolves all seven
+columns against this workbook and its stats engine analyses the result without modification.
 
 ## Repository contents
 
 | Path | What it is |
 |---|---|
-| `EC_Sales_Basket_Analysis_Demo.xlsx` | A runnable version of the logic above on synthetic data, including the `EXPORT` sheet |
-| `data/orders_demo.csv` | The synthetic dataset the demo runs on — the raw columns of the workbook's `DATA_ORDERS` sheet |
+| `index.html`, `css/style.css` | The browser demo — one static page, no framework and no build step |
+| `js/kpi.js` | The calculation engine, ported column by column from the workbook |
+| `js/charts.js` | The two SVG charts, hand-rolled so the page stays dependency-free |
+| `js/app.js` | Parameters, rendering, and the export block |
+| `EC_Sales_Basket_Analysis_Demo.xlsx` | The same logic as worksheet formulas over a local table |
+| `data/orders_demo.csv` | The synthetic dataset — 6,824 order lines, 1,900 customers, 4,106 orders |
+| `data/products_demo.csv` | The product master, 30 products |
 
 The production layer — the Power Query (M) section, the native T-SQL it sends, and the VBA refresh
 macros — is not published here. It runs against an internal SQL Server and is quoted in this README
 only where a fragment is readable on its own.
 
-The demo workbook reproduces the logic above with worksheet formulas over a local table, so it opens
-and recalculates without a database or credentials. Its outputs were verified against an independent
-implementation of the same specification.
+Both demos reproduce the logic above without a database or credentials, and their outputs were
+verified against an independent implementation of the same specification.
 
-### Running the demo
+### Running the browser demo
 
-Open the workbook and edit three cells on the **DASHBOARD** sheet — everything else recalculates.
-No macros, no connection, no credentials.
+Open the live link above, or serve the folder locally — `fetch` is blocked over `file://`, so it
+needs a server rather than a double-click:
+
+```bash
+python3 -m http.server 8000
+```
+
+### Running the Excel workbook
+
+Open it and edit three cells on the **DASHBOARD** sheet; everything else recalculates. No macros,
+no connection, no credentials.
 
 | Cell | Parameter | Format |
 |---|---|---|
@@ -205,6 +224,31 @@ holding the synthetic data and the per-row working columns.
 
 Because the file is generated rather than saved by Excel, it carries a full-recalculate-on-open
 flag; if a viewer ever shows blanks, `Ctrl+Alt+F9` forces the same pass.
+
+### How the browser port was checked
+
+`js/kpi.js` is a column-by-column port of the workbook — each block names the sheet and column it
+came from, so the two can be read side by side. To check the port, the same specification was
+implemented a second time in Python, deliberately the other way round: where the workbook (and
+therefore the JS) uses row-relative running counters to flag a customer's first appearance, the
+reference computes the same quantities as set cardinalities. The two were then compared across
+seven parameter sets — whole catalogue and single product, wide and narrow windows, a window
+containing no orders at all — covering every figure on the page: the eight summary measures, every
+monthly row, all 123 cohort rows, and both TOP10 tables. All values agree exactly.
+
+Two behaviours are reproduced rather than corrected, because the workbook is the specification:
+
+**①売上集計 does not filter on the product code.** The product code selects the basket for ②; the
+roll-up is a period filter over the whole catalogue. That is what the dashboard's own instructions
+say, and it is why picking a product leaves the top row of figures unchanged.
+
+**The monthly block can open with an empty row and stop a month early.** The month rows are seeded
+from the calendar month of the start date, while the figures are bucketed by fiscal month (21st
+onward belongs to the next month). When the period starts on the 21st or later the two are one
+month out of step — which matters, because this block is the export contract feeding the seasonal
+analyzer. The demo flags it in place instead of hiding it; setting a start date on or before the
+20th avoids it, and seeding the row labels from the fiscal month of the start date would fix it at
+source.
 
 ## Sanitisation
 

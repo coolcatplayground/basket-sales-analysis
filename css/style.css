@@ -1,0 +1,386 @@
+/* --------------------------------------------------------------------------
+   Tokens. Light values live on bare :root; the dark values are declared twice —
+   once for the OS setting, once for an explicit stamp — so neither can win by
+   accident.
+   -------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+  --plane:          #f9f9f7;
+  --surface-1:      #fcfcfb;
+  --surface-2:      #f2f1ed;
+  --text-primary:   #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted:     #898781;
+  --grid:           #e1e0d9;
+  --axis:           #c3c2b7;
+  --border:         rgba(11, 11, 11, 0.10);
+  --series-1:       #2a78d6;
+  --series-2:       #eb6834;
+  --accent-soft:    rgba(42, 120, 214, 0.10);
+  --shadow:         0 1px 2px rgba(11, 11, 11, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --plane:          #0d0d0d;
+    --surface-1:      #1a1a19;
+    --surface-2:      #232322;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --grid:           #2c2c2a;
+    --axis:           #383835;
+    --border:         rgba(255, 255, 255, 0.10);
+    --series-1:       #3987e5;
+    --series-2:       #d95926;
+    --accent-soft:    rgba(57, 135, 229, 0.16);
+    --shadow:         none;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --plane:          #0d0d0d;
+  --surface-1:      #1a1a19;
+  --surface-2:      #232322;
+  --text-primary:   #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted:     #898781;
+  --grid:           #2c2c2a;
+  --axis:           #383835;
+  --border:         rgba(255, 255, 255, 0.10);
+  --series-1:       #3987e5;
+  --series-2:       #d95926;
+  --accent-soft:    rgba(57, 135, 229, 0.16);
+  --shadow:         none;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--plane);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans",
+               "Noto Sans JP", Meiryo, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Header
+   -------------------------------------------------------------------------- */
+.page-head { padding: 48px 0 28px; border-bottom: 1px solid var(--border); }
+
+.eyebrow {
+  margin: 0 0 10px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+
+.page-head h1 {
+  margin: 0 0 14px;
+  font-size: clamp(24px, 3.4vw, 34px);
+  line-height: 1.25; font-weight: 640; letter-spacing: -0.01em;
+}
+
+.lede {
+  margin: 0; max-width: 68ch;
+  color: var(--text-secondary); font-size: 15px;
+}
+
+.head-links { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 20px; }
+
+.head-links a {
+  color: var(--series-1); text-decoration: none;
+  font-size: 14px; font-weight: 500;
+  border-bottom: 1px solid transparent; padding-bottom: 1px;
+}
+.head-links a:hover { border-bottom-color: currentColor; }
+
+/* --------------------------------------------------------------------------
+   Panels
+   -------------------------------------------------------------------------- */
+main { padding: 28px 20px 56px; }
+
+.panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+
+.panel-head { margin-bottom: 20px; }
+
+.panel-head h2, .notes h2 {
+  margin: 0 0 4px;
+  font-size: 19px; font-weight: 620; letter-spacing: -0.005em;
+}
+
+.panel-head h2 .num { color: var(--text-muted); font-weight: 500; margin-right: 4px; }
+
+h2 em, h3 em {
+  font-style: normal; font-weight: 450;
+  color: var(--text-muted); font-size: 0.76em; margin-left: 8px;
+}
+
+.panel-head p { margin: 0; color: var(--text-secondary); font-size: 14px; }
+
+h3 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+
+.muted { color: var(--text-muted); }
+
+/* --------------------------------------------------------------------------
+   Controls
+   -------------------------------------------------------------------------- */
+.controls { padding: 20px 24px; }
+
+.control-row {
+  display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;
+}
+
+.field { display: flex; flex-direction: column; gap: 5px; flex: 0 1 180px; }
+.field-wide { flex: 1 1 280px; }
+
+.field > span {
+  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+}
+.field > span em {
+  font-style: normal; font-weight: 400; color: var(--text-muted); margin-left: 5px;
+}
+
+input[type="date"], select {
+  font: inherit; font-size: 14px;
+  padding: 8px 10px;
+  color: var(--text-primary);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 100%;
+}
+input[type="date"]:focus-visible, select:focus-visible,
+button:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--series-1); outline-offset: 2px;
+}
+
+.btn-ghost {
+  font: inherit; font-size: 13px;
+  padding: 8px 14px;
+  color: var(--text-secondary);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn-ghost:hover { color: var(--text-primary); border-color: var(--axis); }
+
+.control-note, .table-note {
+  margin: 14px 0 0; font-size: 13px; color: var(--text-secondary);
+}
+.table-note { margin: 0 0 12px; }
+
+/* --------------------------------------------------------------------------
+   Stat tiles
+   -------------------------------------------------------------------------- */
+/* Fixed column counts, so eight tiles land as 4+4 rather than 6+2 with a gap. */
+.tiles {
+  display: grid; gap: 1px;
+  grid-template-columns: repeat(2, 1fr);
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden;
+  margin-bottom: 26px;
+}
+
+@media (min-width: 640px) {
+  .tiles { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* margin:0 — a <dl> carries a default block margin that would open a gap between rows */
+.tile { background: var(--surface-1); padding: 14px 16px; margin: 0; }
+
+.tile dt {
+  margin: 0 0 4px; font-size: 12px; font-weight: 500; color: var(--text-secondary);
+}
+.tile dd {
+  margin: 0; font-size: 21px; font-weight: 600; letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+.tile dd .unit { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-left: 2px; }
+
+/* --------------------------------------------------------------------------
+   Charts
+   -------------------------------------------------------------------------- */
+.chart-figure { margin: 0 0 26px; }
+
+.chart-figure figcaption { margin-bottom: 10px; }
+.chart-figure figcaption p { margin: 0; font-size: 13px; color: var(--text-secondary); }
+
+.chart-host { position: relative; width: 100%; }
+.chart-host svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+.chart-legend {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  margin: 0 0 8px; padding: 0; list-style: none;
+  font-size: 12px; color: var(--text-secondary);
+}
+.chart-legend li { display: flex; align-items: center; gap: 6px; }
+.chart-legend .swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+.bar-hit { fill: transparent; cursor: default; }
+.bar-hit:hover ~ .bar-band, .bar-band.is-active { fill: var(--accent-soft); }
+
+.chart-tip {
+  position: absolute; z-index: 5; pointer-events: none;
+  background: var(--surface-1);
+  border: 1px solid var(--axis);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px; line-height: 1.5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+  white-space: nowrap;
+  opacity: 0; transition: opacity 0.08s;
+}
+.chart-tip.is-on { opacity: 1; }
+.chart-tip b { display: block; font-size: 12px; margin-bottom: 2px; }
+.chart-tip .row { display: flex; align-items: center; gap: 6px; }
+.chart-tip .row .swatch { width: 8px; height: 8px; border-radius: 2px; }
+.chart-tip .row .v { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+/* --------------------------------------------------------------------------
+   Tables
+   -------------------------------------------------------------------------- */
+.table-head {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  align-items: baseline; justify-content: space-between;
+  margin-top: 6px;
+}
+.table-actions { display: flex; gap: 8px; }
+
+.table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.table-scroll-tall { max-height: 380px; overflow-y: auto; }
+
+.data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+
+.data-table th, .data-table td {
+  padding: 8px 12px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--grid);
+}
+.data-table th:first-child, .data-table td:first-child { text-align: left; }
+.data-table td { font-variant-numeric: tabular-nums; }
+
+.data-table thead th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: 12px; font-weight: 600;
+  text-align: right;
+}
+.data-table thead th:first-child { text-align: left; }
+.data-table tbody tr:last-child td { border-bottom: 0; }
+.data-table tbody tr:hover td { background: var(--surface-2); }
+
+.data-table .zero-row td { color: var(--text-muted); }
+
+.rank-table td:nth-child(2) { text-align: left; white-space: normal; min-width: 150px; }
+.rank-table .num-col { text-align: right; }
+
+/* the in-cell bar: one series, so one color. margin-left:auto anchors it to the
+   right edge, under the figure it belongs to, since the column is right-aligned. */
+.cell-bar {
+  display: block; height: 3px; margin-top: 3px; margin-left: auto;
+  border-radius: 2px;
+  background: var(--series-1); opacity: 0.85;
+}
+
+.parity-note {
+  margin: 14px 0 0; padding: 10px 12px;
+  font-size: 13px; color: var(--text-secondary);
+  background: var(--surface-2);
+  border-left: 2px solid var(--axis);
+  border-radius: 0 6px 6px 0;
+}
+
+.top-grid {
+  display: grid; gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  margin-bottom: 24px;
+}
+
+.cohorts { border-top: 1px solid var(--border); padding-top: 16px; }
+.cohorts summary {
+  cursor: pointer; font-size: 15px; font-weight: 600;
+  list-style-position: outside; margin-bottom: 12px;
+}
+.cohorts summary .muted { font-weight: 400; font-size: 13px; }
+
+/* --------------------------------------------------------------------------
+   Notes & footer
+   -------------------------------------------------------------------------- */
+.notes dl { margin: 18px 0 0; display: grid; gap: 16px; }
+.notes dt { font-weight: 600; font-size: 14px; margin-bottom: 3px; }
+.notes dd {
+  margin: 0; color: var(--text-secondary); font-size: 14px; max-width: 76ch;
+}
+.notes code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.88em;
+  background: var(--surface-2);
+  padding: 1px 5px; border-radius: 4px;
+}
+
+.fineprint {
+  margin: 22px 0 0; padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 13px; color: var(--text-muted); max-width: 76ch;
+}
+
+.page-foot {
+  border-top: 1px solid var(--border);
+  padding: 22px 0 40px;
+  font-size: 13px; color: var(--text-muted);
+}
+.page-foot p { margin: 0; max-width: 76ch; }
+.page-foot code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+#error-banner {
+  background: #d03b3b; color: #fff;
+  padding: 12px 20px; font-size: 14px;
+}
+#error-banner code { font-family: ui-monospace, Menlo, Consolas, monospace; }
+
+main[aria-busy="true"] .panel { opacity: 0.45; }
+
+.is-loading {
+  padding: 40px 0; text-align: center; color: var(--text-muted); font-size: 14px;
+}
+
+@media (max-width: 620px) {
+  .panel { padding: 18px 16px; }
+  .tile dd { font-size: 18px; }
+  .data-table th, .data-table td { padding: 7px 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-tip { transition: none; }
+}
