@@ -1,0 +1,12 @@
+[
+  { "label": "all_default",  "start": 20250121, "end": 20260620, "product": "All" },
+  { "label": "top_product",  "start": 20250121, "end": 20260620, "product": "CT106" },
+  { "label": "all_2024",     "start": 20240101, "end": 20241231, "product": "All" },
+  { "label": "service",      "start": 20200101, "end": 20261231, "product": "CE101" },
+  { "label": "narrow",       "start": 20250601, "end": 20251120, "product": "CS101" },
+  { "label": "all_full",     "start": 20230101, "end": 20261231, "product": "All" },
+  { "label": "empty_window", "start": 20260701, "end": 20261231, "product": "All" },
+  { "label": "twin_small",   "start": 20240101, "end": 20261231, "product": "CF102" },
+  { "label": "fiscal_edge",  "start": 20250120, "end": 20250220, "product": "All" },
+  { "label": "single_day",   "start": 20250515, "end": 20250515, "product": "All" }
+]

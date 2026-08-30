@@ -230,8 +230,136 @@
     host.parentNode.insertBefore(ul, host);
   }
 
+  /*
+   * scatter — revenue rank against acquisition rank, one dot per product.
+   *
+   * Plotting the ranks rather than the raw measures is deliberate. Revenue spans three
+   * orders of magnitude across the catalogue, so on a linear axis the whole tail collapses
+   * into the left edge and the comparison is unreadable. Ranks spread evenly by
+   * construction, and the question here is ordinal anyway: does this product acquire
+   * better than it sells? That is its distance from the diagonal.
+   *
+   * Emphasis, not colour-by-rank: the products that clear the callout threshold take the
+   * series colour and a direct label, the rest stay muted. Identity comes from the label
+   * and the tooltip, never from hue alone.
+   */
+  function scatter(host, points, opts) {
+    host.textContent = '';
+    if (!points.length) return;
+
+    var width = Math.max(host.clientWidth || 640, 320);
+    var plotH = Math.min(Math.max(width * 0.52, 260), 420);
+    var height = PAD_T + plotH + AXIS_BAND + 14;
+    var padL = 46;
+    var plotW = width - padL - PAD_R;
+    var n = opts.max;
+
+    var svg = el('svg', {
+      viewBox: '0 0 ' + width + ' ' + height,
+      width: width, height: height,
+      role: 'img', 'aria-label': opts.ariaLabel
+    });
+
+    var xOf = function (v) { return padL + ((v - 1) / (n - 1)) * plotW; };
+    var yOf = function (v) { return PAD_T + ((v - 1) / (n - 1)) * plotH; };
+
+    var ticks = [1];
+    for (var t = 10; t < n; t += 10) ticks.push(t);
+    ticks.push(n);
+
+    ticks.forEach(function (v) {
+      svg.appendChild(el('line', {
+        x1: padL, x2: width - PAD_R, y1: yOf(v), y2: yOf(v),
+        stroke: 'var(--grid)', 'stroke-width': 1
+      }));
+      svg.appendChild(el('line', {
+        x1: xOf(v), x2: xOf(v), y1: PAD_T, y2: PAD_T + plotH,
+        stroke: 'var(--grid)', 'stroke-width': 1
+      }));
+      var yl = el('text', {
+        x: padL - 8, y: yOf(v) + 4, 'text-anchor': 'end',
+        fill: 'var(--text-muted)', 'font-size': 11
+      });
+      yl.textContent = v;
+      svg.appendChild(yl);
+      var xl = el('text', {
+        x: xOf(v), y: PAD_T + plotH + 18, 'text-anchor': 'middle',
+        fill: 'var(--text-muted)', 'font-size': 11
+      });
+      xl.textContent = v;
+      svg.appendChild(xl);
+    });
+
+    /* the diagonal: sells and acquires equally well */
+    svg.appendChild(el('line', {
+      x1: xOf(1), y1: yOf(1), x2: xOf(n), y2: yOf(n),
+      stroke: 'var(--axis)', 'stroke-width': 1
+    }));
+    var dia = el('text', {
+      x: xOf(n) - 6, y: yOf(n) - 8, 'text-anchor': 'end',
+      fill: 'var(--text-muted)', 'font-size': 11
+    });
+    dia.textContent = opts.diagonalLabel;
+    svg.appendChild(dia);
+
+    var axX = el('text', {
+      x: padL + plotW / 2, y: height - 2, 'text-anchor': 'middle',
+      fill: 'var(--text-secondary)', 'font-size': 11
+    });
+    axX.textContent = opts.xLabel;
+    svg.appendChild(axX);
+
+    var axY = el('text', {
+      x: 12, y: PAD_T + plotH / 2, 'text-anchor': 'middle',
+      fill: 'var(--text-secondary)', 'font-size': 11,
+      transform: 'rotate(-90 12 ' + (PAD_T + plotH / 2) + ')'
+    });
+    axY.textContent = opts.yLabel;
+    svg.appendChild(axY);
+
+    var tip = tooltip(host);
+
+    points.forEach(function (p) {
+      var cx = xOf(p.x);
+      var cy = yOf(p.y);
+      /* a 2px surface ring keeps overlapping dots readable without a border */
+      svg.appendChild(el('circle', {
+        cx: cx, cy: cy, r: p.highlight ? 7 : 6,
+        fill: 'var(--surface-1)'
+      }));
+      svg.appendChild(el('circle', {
+        cx: cx, cy: cy, r: p.highlight ? 5 : 4,
+        fill: p.highlight ? 'var(--series-1)' : 'var(--text-muted)',
+        opacity: p.highlight ? 1 : 0.55
+      }));
+      if (p.highlight) {
+        var lab = el('text', {
+          x: cx + 9, y: cy + 4, fill: 'var(--text-secondary)',
+          'font-size': 11, 'font-weight': 600
+        });
+        lab.textContent = p.code;
+        svg.appendChild(lab);
+      }
+    });
+
+    /* hover targets last and generous, so small dots stay easy to hit */
+    points.forEach(function (p) {
+      var hit = el('circle', {
+        cx: xOf(p.x), cy: yOf(p.y), r: 13, fill: 'transparent', class: 'bar-hit'
+      });
+      hit.addEventListener('mouseenter', function () {
+        tip.show(opts.tipHtml(p), xOf(p.x), width);
+      });
+      hit.addEventListener('mouseleave', tip.hide);
+      svg.appendChild(hit);
+    });
+
+    host.appendChild(svg);
+  }
+
   global.Charts = {
     render: render,
+    scatter: scatter,
     legend: legend,
     niceMax: niceMax,
     yenTick: yenTick

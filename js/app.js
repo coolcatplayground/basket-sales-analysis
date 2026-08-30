@@ -8,7 +8,16 @@
 
   var DEFAULTS = { start: 20250121, end: 20260620, product: 'All' };
 
-  var state = { base: null, products: [], result: null };
+  var state = {
+    base: null, products: [], result: null, scan: null,
+    sort: { key: 'revenueRank', dir: 1 }
+  };
+
+  /* A product is called out only when its two ranks differ by this much AND it has
+     enough customers behind it for the rank to mean anything. Without the second test
+     a product with four buyers can top the list on noise alone. */
+  var CALLOUT_GAP = 3;
+  var CALLOUT_MIN_CUSTOMERS = 20;
 
   /* --- small helpers ---------------------------------------------------- */
 
@@ -264,6 +273,130 @@
     });
   }
 
+  /* --- ③ which products acquire customers -------------------------------- */
+
+  function renderProductScan() {
+    var scan = state.scan;
+    var n = scan.length;
+
+    var highlighted = scan.filter(function (e) {
+      return e.gap >= CALLOUT_GAP && e.acquired >= CALLOUT_MIN_CUSTOMERS;
+    }).sort(function (a, b) { return b.gap - a.gap || b.acquired - a.acquired; });
+    var isHigh = {};
+    highlighted.forEach(function (e) { isHigh[e.code] = true; });
+
+    var legend = $('scatter-legend');
+    legend.textContent = '';
+    [[t('k3LegendHi'), 'var(--series-1)'], [t('k3LegendRest'), 'var(--text-muted)']]
+      .forEach(function (pair) {
+        var li = document.createElement('li');
+        var sw = document.createElement('span');
+        sw.className = 'swatch';
+        sw.style.background = pair[1];
+        li.appendChild(sw);
+        li.appendChild(document.createTextNode(pair[0]));
+        legend.appendChild(li);
+      });
+
+    Charts.scatter($('chart-scatter'), scan.map(function (e) {
+      return {
+        x: e.revenueRank, y: e.acquiredRank, code: e.code, highlight: !!isHigh[e.code],
+        entry: e
+      };
+    }), {
+      max: n,
+      ariaLabel: t('k3ChartTitle'),
+      xLabel: t('k3XLabel'),
+      yLabel: t('k3YLabel'),
+      diagonalLabel: t('k3Diagonal'),
+      tipHtml: function (p) {
+        var e = p.entry;
+        return '<b>' + e.code + ' ' + e.name + '</b>' +
+          '<div class="row"><span>' + t('thRevenue') + '</span><span class="v">' +
+          fmtYen(e.revenue) + ' (#' + e.revenueRank + ')</span></div>' +
+          '<div class="row"><span>' + t('thAcquired') + '</span><span class="v">' +
+          fmtInt(e.acquired) + ' (#' + e.acquiredRank + ')</span></div>' +
+          '<div class="row"><span>' + t('tRepeatRate') + '</span><span class="v">' +
+          fmtPct(e.repeatRate) + '</span></div>';
+      }
+    });
+
+    var callout = $('k3-callout');
+    callout.hidden = false;
+    if (highlighted.length) {
+      callout.innerHTML = t('k3Callout', {
+        list: highlighted.slice(0, 4).map(function (e) {
+          return e.code + ' ' + e.name;
+        }).join(' / ')
+      });
+    } else {
+      callout.textContent = t('k3CalloutNone');
+    }
+
+    renderProductTable(isHigh);
+  }
+
+  function renderProductTable(isHigh) {
+    var key = state.sort.key;
+    var dir = state.sort.dir;
+    var rows = state.scan.slice().sort(function (a, b) {
+      var x = a[key], y = b[key];
+      if (typeof x === 'string') return dir * x.localeCompare(y);
+      return dir * (x - y) || a.revenueRank - b.revenueRank;
+    });
+
+    var body = $('product-table').querySelector('tbody');
+    body.textContent = '';
+    rows.forEach(function (e) {
+      var tr = document.createElement('tr');
+      if (isHigh && isHigh[e.code]) tr.className = 'is-called-out';
+      var cells = [
+        e.code, e.name, fmtInt(e.revenue), '#' + e.revenueRank,
+        fmtInt(e.acquired), '#' + e.acquiredRank,
+        e.gap > 0 ? '+' + e.gap : String(e.gap),
+        e.acquired ? fmtPct(e.repeatRate) : '—'
+      ];
+      cells.forEach(function (v, i) {
+        var cell = document.createElement(i === 0 ? 'th' : 'td');
+        if (i === 0) cell.setAttribute('scope', 'row');
+        if (i >= 2) cell.className = 'num-col';
+        if (i === 6 && e.gap > 0) cell.classList.add('gap-positive');
+        cell.textContent = v;
+        tr.appendChild(cell);
+      });
+      body.appendChild(tr);
+    });
+
+    [].forEach.call($('product-table').querySelectorAll('th[data-sort]'), function (th) {
+      var active = th.getAttribute('data-sort') === key;
+      th.setAttribute('aria-sort', active ? (dir === 1 ? 'ascending' : 'descending') : 'none');
+      th.classList.toggle('is-sorted', active);
+      th.classList.toggle('is-desc', active && dir === -1);
+    });
+  }
+
+  function wireSorting() {
+    [].forEach.call($('product-table').querySelectorAll('th[data-sort]'), function (th) {
+      th.tabIndex = 0;
+      var choose = function () {
+        var key = th.getAttribute('data-sort');
+        if (state.sort.key === key) {
+          state.sort.dir = -state.sort.dir;
+        } else {
+          state.sort.key = key;
+          /* ranks read best smallest-first; everything else biggest-first */
+          state.sort.dir = key === 'revenueRank' || key === 'acquiredRank' ||
+            key === 'code' || key === 'name' ? 1 : -1;
+        }
+        renderProductScan();
+      };
+      th.addEventListener('click', choose);
+      th.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(); }
+      });
+    });
+  }
+
   /* --- export block ----------------------------------------------------- */
   /* The header row is the analyzer's contract, so it is Japanese in every language. */
 
@@ -283,12 +416,42 @@
 
   function downloadExport() {
     var name = currentParams().productCode;
-    var blob = new Blob(['﻿' + exportText(state.result, ',')],
-                        { type: 'text/csv;charset=utf-8' });
+    saveBlob(new Blob(['﻿' + exportText(state.result, ',')],
+                      { type: 'text/csv;charset=utf-8' }), 'monthly_' + name + '.csv');
+  }
+
+  /*
+   * The analyzer takes .xlsx, not CSV, and reads the product name off the sheet name — so
+   * the sheet name is part of the payload, and it stays Japanese in both languages for the
+   * same reason the header row does.
+   */
+  function sheetNameForExport() {
+    var code = currentParams().productCode;
+    if (String(code).toUpperCase() === 'ALL') return t('allProductsSheet');
+    var match = null;
+    state.products.forEach(function (p) {
+      if (p.code === code) match = p;
+    });
+    return match ? match.name : code;
+  }
+
+  function downloadXlsx() {
+    var rows = exportRows(state.result).map(function (row, i) {
+      if (i === 0) return row;
+      return row.map(function (v, c) { return c === 0 ? v : Number(v); });
+    });
+    var name = sheetNameForExport();
+    var bytes = MiniXlsx.build(name, rows);
+    saveBlob(new Blob([bytes], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    }), name + '.xlsx');
+  }
+
+  function saveBlob(blob, filename) {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'monthly_' + name + '.csv';
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -317,6 +480,42 @@
     ta.select();
     try { document.execCommand('copy'); done(); } catch (e) { /* nothing to do */ }
     document.body.removeChild(ta);
+  }
+
+  /* --- shareable URL ----------------------------------------------------- */
+  /*
+   * The parameters live in the query string so a particular view can be linked to
+   * directly — "here is the CT106 case" rather than "now pick CT106 from the dropdown".
+   * replaceState, so changing a date does not fill the back button with history.
+   */
+
+  function writeUrl(params) {
+    if (!window.history || !history.replaceState) return;
+    var q = [];
+    if (params.start !== DEFAULTS.start) q.push('start=' + params.start);
+    if (params.end !== DEFAULTS.end) q.push('end=' + params.end);
+    if (params.productCode !== DEFAULTS.product) q.push('product=' + params.productCode);
+    var url = location.pathname + (q.length ? '?' + q.join('&') : '');
+    history.replaceState(null, '', url);
+  }
+
+  function readUrl() {
+    var out = {};
+    var q = location.search.replace(/^\?/, '');
+    if (!q) return out;
+    q.split('&').forEach(function (pair) {
+      var bits = pair.split('=');
+      var k = decodeURIComponent(bits[0]);
+      var v = decodeURIComponent(bits[1] || '');
+      if (k === 'start' || k === 'end') {
+        var n = parseInt(v, 10);
+        /* only accept a well-formed YYYYMMDD, so a mangled link falls back to the default */
+        if (/^\d{8}$/.test(v) && n) out[k] = n;
+      } else if (k === 'product') {
+        out.product = v;
+      }
+    });
+    return out;
   }
 
   /* --- parameters ------------------------------------------------------- */
@@ -350,10 +549,13 @@
     $('error-banner').hidden = true;
 
     state.result = KPI.compute(state.base, params);
+    state.scan = KPI.productScan(state.base, params);
     renderKpi1(state.result);
     renderCharts(state.result);
     renderMonthlyTable(state.result);
     renderKpi2(state.result);
+    renderProductScan();
+    writeUrl(params);
 
     $('kpi2-scope').textContent = params.productCode.toUpperCase() === 'ALL'
       ? t('k2ScopeAll')
@@ -385,9 +587,14 @@
 
     fillProducts();
 
-    $('start').value = toInputDate(DEFAULTS.start);
-    $('end').value = toInputDate(DEFAULTS.end);
-    $('product').value = DEFAULTS.product;
+    var initial = readUrl();
+    $('start').value = toInputDate(initial.start || DEFAULTS.start);
+    $('end').value = toInputDate(initial.end || DEFAULTS.end);
+    $('product').value = initial.product && $('product').querySelector(
+      'option[value="' + initial.product.replace(/"/g, '') + '"]')
+      ? initial.product : DEFAULTS.product;
+
+    wireSorting();
 
     ['start', 'end', 'product'].forEach(function (id) {
       $(id).addEventListener('change', recompute);
@@ -399,6 +606,7 @@
       recompute();
     });
     $('download-export').addEventListener('click', downloadExport);
+    $('download-xlsx').addEventListener('click', downloadXlsx);
     $('copy-export').addEventListener('click', function () { copyExport(this); });
 
     /* i18n.js has already refreshed the static copy; redraw what data produced. */

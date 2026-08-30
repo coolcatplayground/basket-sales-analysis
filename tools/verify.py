@@ -1,0 +1,86 @@
+"""
+Run every check over the demo engine, and fail loudly if any of them disagree.
+
+    python tools/verify.py
+
+1. The engine (js/kpi.js) against reference_impl.py — an independent implementation of the
+   same specification, written set-wise where the engine uses row-relative running
+   counters. Compared across every scenario in scenarios.json, field by field.
+2. productScan against compute(), product by product, so the one-pass shortcut behind ③
+   is held to the same numbers as the long way round.
+3. The hand-written .xlsx export, opened with a real spreadsheet reader and checked
+   against the seven-column contract the seasonal analyzer expects.
+
+This is what the README means when it says the output is verified; it runs in CI on every
+push so the claim stays true.
+"""
+import json, os, subprocess, sys, tempfile
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TOOLS = os.path.join(REPO, 'tools')
+
+
+def run(argv, **kw):
+    return subprocess.run(argv, capture_output=True, text=True, encoding='utf-8', **kw)
+
+
+def step(title):
+    print('\n' + '=' * 68)
+    print(title)
+    print('=' * 68)
+
+
+failures = []
+
+# ---------------------------------------------------------------- 1. engine vs reference
+step('1/3  engine (js/kpi.js) vs the independent Python reference')
+scenarios = os.path.join(TOOLS, 'scenarios.json')
+tmp = tempfile.mkdtemp(prefix='basket-verify-')
+js_out = os.path.join(tmp, 'engine.json')
+ref_out = os.path.join(tmp, 'reference.json')
+
+proc = run(['node', os.path.join(TOOLS, 'run_engine.js'), REPO, scenarios])
+if proc.returncode != 0:
+    print(proc.stderr)
+    failures.append('the engine run failed')
+else:
+    with open(js_out, 'w', encoding='utf-8') as f:
+        f.write(proc.stdout)
+
+    proc = run([sys.executable, os.path.join(TOOLS, 'reference_impl.py'), REPO, scenarios])
+    if proc.returncode != 0:
+        print(proc.stderr)
+        failures.append('the reference run failed')
+    else:
+        with open(ref_out, 'w', encoding='utf-8') as f:
+            f.write(proc.stdout)
+        proc = run([sys.executable, os.path.join(TOOLS, 'compare.py'), js_out, ref_out])
+        print(proc.stdout.strip())
+        if proc.returncode != 0:
+            print(proc.stderr)
+            failures.append('the engine and the reference disagree')
+
+# ------------------------------------------------------------- 2. productScan vs compute
+step('2/3  productScan vs compute(), per product')
+proc = run(['node', os.path.join(TOOLS, 'check_product_scan.js')])
+print(proc.stdout.strip())
+if proc.returncode != 0:
+    print(proc.stderr)
+    failures.append('productScan disagrees with compute()')
+
+# --------------------------------------------------------------------- 3. xlsx contract
+step('3/3  the exported .xlsx against the analyzer contract')
+proc = run([sys.executable, os.path.join(TOOLS, 'check_xlsx_export.py')])
+print(proc.stdout.strip())
+if proc.returncode != 0:
+    print(proc.stderr)
+    failures.append('the exported workbook does not satisfy the contract')
+
+# ------------------------------------------------------------------------------ verdict
+print('\n' + '=' * 68)
+if failures:
+    print('FAILED (%d):' % len(failures))
+    for f in failures:
+        print('  - ' + f)
+    sys.exit(1)
+print('ALL CHECKS PASSED')

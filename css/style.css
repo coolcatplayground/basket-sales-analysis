@@ -350,6 +350,51 @@ button:focus-visible, summary:focus-visible {
 .cohorts summary .muted { font-weight: 400; font-size: 13px; }
 
 /* --------------------------------------------------------------------------
+   ③ Product comparison
+   -------------------------------------------------------------------------- */
+.lead-note {
+  margin: 0 0 22px;
+  font-size: 14px; color: var(--text-secondary);
+}
+
+.callout {
+  margin: 4px 0 22px;
+  padding: 12px 14px;
+  font-size: 14px; color: var(--text-primary);
+  background: var(--accent-soft);
+  border-left: 2px solid var(--series-1);
+  border-radius: 0 6px 6px 0;
+}
+
+.btn-primary {
+  font: inherit; font-size: 13px;
+  padding: 8px 14px;
+  color: #fff;
+  background: var(--series-1);
+  border: 1px solid var(--series-1);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn-primary:hover { filter: brightness(1.08); }
+
+/* sortable headers */
+.sortable th[data-sort] { cursor: pointer; user-select: none; white-space: nowrap; }
+.sortable th[data-sort]:hover { color: var(--text-primary); }
+
+.sortable th.is-sorted { color: var(--text-primary); }
+.sortable th.is-sorted::after {
+  content: " \2191";
+  font-size: 10px;
+}
+.sortable th.is-sorted.is-desc::after { content: " \2193"; }
+
+/* the table is the point of ③, so give it room rather than a nine-row window */
+.table-scroll-products { max-height: 560px; overflow-y: auto; }
+
+.data-table tr.is-called-out th[scope="row"] { color: var(--series-1); font-weight: 700; }
+.data-table td.gap-positive { color: var(--series-1); font-weight: 600; }
+
+/* --------------------------------------------------------------------------
    Notes & footer
    -------------------------------------------------------------------------- */
 .notes dl { margin: 18px 0 0; display: grid; gap: 16px; }

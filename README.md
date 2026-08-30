@@ -1,5 +1,7 @@
 # EC Sales KPI & First-Purchase Basket Analysis
 
+[![verify](https://github.com/coolcatplayground/basket-sales-analysis/actions/workflows/verify.yml/badge.svg)](https://github.com/coolcatplayground/basket-sales-analysis/actions/workflows/verify.yml)
+
 An Excel-based analytics tool I built for the e-commerce team at my workplace. It turns a raw order
 database into two things the team could not get before: same-day sales KPIs for any product and
 period, and a customer-behaviour view that follows a product from a customer's first purchase
@@ -14,7 +16,13 @@ through to what they bought the second time.
 The same calculations running in the browser over the synthetic dataset — change the dates or the
 product code and the KPIs, the two co-purchase tables and the export block all recalculate. No
 Excel, no database, no sign-in. The interface reads in Japanese or English; the switch is in the
-top-right corner, and it opens in whichever your browser asks for.
+top-right corner, and it opens in whichever your browser asks for. The parameters live in the URL,
+so a particular view can be linked to directly —
+[the CT106 case](https://coolcatplayground.github.io/basket-sales-analysis/?product=CT106).
+
+![The dashboard: parameters, the sales roll-up, and the monthly trend](docs/screenshot-dashboard.png)
+
+![Which products acquire customers: revenue rank against acquisition rank](docs/screenshot-products.png)
 
 ---
 
@@ -72,6 +80,14 @@ keeps **every line of the qualifying order**, not just the line that matched the
 Results are broken out by registration-month cohort, so a product's acquisition performance can be
 read against the month those customers actually joined instead of being smeared across ten years of
 history.
+
+**A third view, in the browser demo only.** KPI1 and KPI2 answer for one product at a time, which
+means the argument this tool rests on — that a product's revenue line cannot tell you whether it
+acquires customers — has to be discovered by checking products one by one. The demo adds a view the
+workbook does not have: every product ranked on revenue and on customers acquired at once, plotted
+rank against rank. Distance from the diagonal is the whole point, and the products above it are the
+ones a revenue ranking hides. It introduces no new definitions — acquisition is the workbook's own
+MEMBERS!K test — and the numbers are checked against the per-product path they short-cut.
 
 ## How it works
 
@@ -178,7 +194,14 @@ The demo workbook carries a dedicated `EXPORT` sheet in exactly this shape, and 
 renders the same block with copy-to-clipboard and CSV buttons, so the handoff can be walked through
 without opening Excel. Those seven headers are the one part of the page the language switch leaves
 alone — they have to match exactly for the analyzer to parse them, so they stay Japanese in both
-languages and the English copy glosses them instead. The handoff is verified end to end — the analyzer's parser resolves all seven
+languages and the English copy glosses them instead.
+
+A CSV cannot actually complete this handoff. The analyzer reads `.xlsx` and takes the product name
+from the **sheet name**, so the sheet name is part of the payload. The demo therefore writes a real
+`.xlsx` — a zip of XML parts, assembled by hand with no library, since a page that pulls in a
+spreadsheet dependency to emit one sheet would rather miss the point. `tools/verify.py` opens the
+result with a real spreadsheet reader on every push and checks the sheet name, the seven headers and
+the cell types. The handoff is verified end to end — the analyzer's parser resolves all seven
 columns against this workbook and its stats engine analyses the result without modification.
 
 ## Repository contents
@@ -188,8 +211,12 @@ columns against this workbook and its stats engine analyses the result without m
 | `index.html`, `css/style.css` | The browser demo — one static page, no framework and no build step |
 | `js/kpi.js` | The calculation engine, ported column by column from the workbook |
 | `js/charts.js` | The two SVG charts, hand-rolled so the page stays dependency-free |
-| `js/app.js` | Parameters, rendering, and the export block |
+| `js/app.js` | Parameters, rendering, the export block, and the URL state |
 | `js/i18n.js` | The Japanese and English copy, and the language switch |
+| `js/xlsx.js` | A minimal `.xlsx` writer — zip and XML by hand, no library |
+| `tools/` | The verification suite: `python tools/verify.py` |
+| `.github/workflows/verify.yml` | Runs that suite on every push |
+| `docs/` | The screenshots used above |
 | `EC_Sales_Basket_Analysis_Demo.xlsx` | The same logic as worksheet formulas over a local table |
 | `data/orders_demo.csv` | The synthetic dataset — 6,824 order lines, 1,900 customers, 4,106 orders |
 | `data/products_demo.csv` | The product master — 30 products, with an English gloss for the demo page |
@@ -242,7 +269,31 @@ holding the synthetic data and the per-row working columns.
 Because the file is generated rather than saved by Excel, it carries a full-recalculate-on-open
 flag; if a viewer ever shows blanks, `Ctrl+Alt+F9` forces the same pass.
 
-### How the browser port was checked
+### How it is checked
+
+    python tools/verify.py
+
+Three checks, run here and in CI on every push:
+
+**The engine against an independent implementation.** `js/kpi.js` is a column-by-column port of the
+workbook — each block names the sheet and column it came from, so the two can be read side by side.
+To check the port, the same specification was implemented a second time in Python
+(`tools/reference_impl.py`), deliberately the other way round: where the workbook (and therefore the
+JS) uses row-relative running counters to flag a customer's first appearance, the reference computes
+the same quantities as set cardinalities. The two are compared across ten parameter sets — whole
+catalogue and single product, wide and narrow windows, a window containing no orders, a single day,
+and a window straddling the 20th — covering every figure on the page: the eight summary measures,
+every monthly row, all 123 cohort rows, and both TOP10 tables. All values agree exactly.
+
+**The product scan against the long way round.** ③ takes one pass over first orders and credits
+every product in the basket, rather than re-running the cohort thirty times. That shortcut is only
+legitimate if it lands on the same numbers, so `tools/check_product_scan.js` asserts it does, product
+by product, against `compute()`.
+
+**The export against the analyzer's contract.** The hand-written `.xlsx` is opened with `openpyxl`
+and checked for the sheet name, the seven header strings and numeric cell types.
+
+### The workbook's own behaviour, reproduced
 
 `js/kpi.js` is a column-by-column port of the workbook — each block names the sheet and column it
 came from, so the two can be read side by side. To check the port, the same specification was
@@ -253,7 +304,7 @@ seven parameter sets — whole catalogue and single product, wide and narrow win
 containing no orders at all — covering every figure on the page: the eight summary measures, every
 monthly row, all 123 cohort rows, and both TOP10 tables. All values agree exactly.
 
-Two behaviours are reproduced rather than corrected, because the workbook is the specification:
+Two things the demo reproduces rather than corrects, because the workbook is the specification:
 
 **①売上集計 does not filter on the product code.** The product code selects the basket for ②; the
 roll-up is a period filter over the whole catalogue. That is what the dashboard's own instructions

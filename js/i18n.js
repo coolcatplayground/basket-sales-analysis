@@ -67,14 +67,40 @@
       btnCopy: 'クリップボードにコピー',
       btnCopied: 'コピーしました',
       btnDownload: 'CSV ダウンロード',
+      btnXlsx: '季節性アナライザー用 .xlsx',
+      allProductsSheet: '全商品',
       expNote: 'この 7 列がそのまま季節性アナライザーの入力形式になります。' +
-               'ヘッダー行が両ツールの契約です。',
+               'ヘッダー行が両ツールの契約です。アナライザーはシート名を商品名として読むため、' +
+               '.xlsx は商品名をシート名にして書き出します（ライブラリなしで生成しています）。',
 
       parityNote: '<strong>ワークブック準拠の挙動:</strong> ' +
         '月度行は開始日の暦月から採番される一方、数値は月度（21日締め）で集計されます。' +
         '開始日が21日以降のときは 1 か月ずれるため、先頭行が空になり、末尾の月度が 1 つ落ちます。' +
         '開始日を20日以前にすると解消します。',
 
+      k3Head: '商品別 獲得力',
+      k3HeadEm: 'Which products acquire customers',
+      k3Desc: '期間内の売上と、期間内に獲得した初回購入顧客数を、同じ期間で並べています。',
+      k3Lead: '商品の売上ラインだけでは、その商品が<strong>顧客を連れてきているか</strong>は分かりません。' +
+              '安い商品が売上ランキングでは目立たないまま、関係の入口になっていることがあります。' +
+              '対角線から離れているほど、売る力と獲得する力がずれている商品です。',
+      k3ChartTitle: '売上順位 × 獲得順位',
+      k3ChartSub: '対角線より上＝売上の順位より、獲得の順位のほうが高い商品。',
+      k3Diagonal: '売上＝獲得',
+      k3XLabel: '売上順位（1 が最上位）',
+      k3YLabel: '獲得順位（1 が最上位）',
+      k3LegendHi: '獲得が売上を上回る商品',
+      k3LegendRest: 'その他の商品',
+      k3Callout: '<strong>{list}</strong> は、売上順位より獲得順位のほうが上です。' +
+                 '売上ランキングだけを見ていれば見落とす商品で、この分析が存在する理由でもあります。',
+      k3CalloutNone: 'この期間では、売上順位と獲得順位が大きく食い違う商品はありません。',
+      k3Note: '獲得顧客数は「初回購入がこの期間内で、その伝票にこの商品が入っていた顧客」の数です。' +
+              '初回購入の伝票には通常いくつかの商品が入るため、商品ごとの合計は総獲得数を上回ります。' +
+              '②の初回購入顧客数は全期間コホートなので、こちらより大きくなります。',
+      thRevRank: '売上順位',
+      thAcqRank: '獲得順位',
+      thGap: '順位差',
+      thAcquired: '獲得顧客数',
       k2Head: 'カゴ分析：初回購入 → 2回目購入',
       k2HeadEm: 'First-purchase basket',
       k2ScopeAll: '全商品・全期間コホート。初回購入の伝票をまるごと数えています。',
@@ -187,11 +213,15 @@
       btnCopy: 'Copy to clipboard',
       btnCopied: 'Copied',
       btnDownload: 'Download CSV',
+      btnXlsx: '.xlsx for the analyzer',
+      allProductsSheet: '全商品',
       expNote: 'These seven columns are the input format of the seasonal analyzer, and the header ' +
                'row is the contract between the two tools — so it stays in Japanese in every ' +
                'language. The columns are: 月別推移 (month) · 売上金額 (revenue) · 購入個数 (units) · ' +
                '購入件数 (order lines) · 総顧客数 (customers) · 新規顧客数 (new) · ' +
-               '既存顧客数 (returning).',
+               '既存顧客数 (returning). The analyzer reads the product name off the SHEET ' +
+               'name, so the .xlsx is written with the product as its sheet name — by hand, ' +
+               'with no library.',
 
       parityNote: '<strong>Workbook parity:</strong> the month rows are seeded from the calendar ' +
         'month of the start date, while the figures are bucketed by accounting month (the 21st ' +
@@ -199,6 +229,34 @@
         'are one month out of step, so the block opens with an empty row and stops one month ' +
         'early. Starting on or before the 20th avoids it.',
 
+      k3Head: 'Which products acquire customers',
+      k3HeadEm: '商品別 獲得力',
+      k3Desc: 'Revenue in the period against customers acquired in the same period, ' +
+              'on the same window.',
+      k3Lead: 'The sales line of a product cannot tell you whether it is ' +
+              '<strong>bringing customers in</strong>. A cheap item can look unremarkable on ' +
+              'the revenue ranking and still be the thing that opens the relationship. The ' +
+              'further a product sits from the diagonal, the more its selling and its ' +
+              'acquiring disagree.',
+      k3ChartTitle: 'Revenue rank against acquisition rank',
+      k3ChartSub: 'Above the diagonal: the product ranks higher on acquisition than on revenue.',
+      k3Diagonal: 'sells = acquires',
+      k3XLabel: 'Revenue rank (1 is best)',
+      k3YLabel: 'Acquisition rank (1 is best)',
+      k3LegendHi: 'Acquires better than it sells',
+      k3LegendRest: 'Everything else',
+      k3Callout: '<strong>{list}</strong> rank higher on acquisition than on revenue. These ' +
+                 'are the products a revenue ranking alone would hide — and the reason this ' +
+                 'analysis exists.',
+      k3CalloutNone: 'In this period no product ranks far apart on the two measures.',
+      k3Note: 'Customers acquired counts customers whose FIRST order fell in this period and ' +
+              'contained the product. A first order usually holds several products, so the ' +
+              'per-product figures sum to more than the number of customers acquired. The ' +
+              'headline figure in ② is larger still, because it is an all-time cohort.',
+      thRevRank: 'Revenue #',
+      thAcqRank: 'Acquisition #',
+      thGap: 'Rank gap',
+      thAcquired: 'Customers acquired',
       k2Head: 'Basket analysis: first order → second order',
       k2HeadEm: 'カゴ分析',
       k2ScopeAll: 'Whole catalogue, all-time cohort. Every line of the qualifying first order ' +

@@ -374,9 +374,116 @@
       .slice(0, 10);
   }
 
+  /*
+   * productScan — the catalogue ranked two ways at once.
+   *
+   * The point the tool exists to make is that a product's own revenue line cannot tell you
+   * whether it acquires customers. So for every product this reports what it sold in the
+   * period alongside how many customers it brought in, and ranks it on both.
+   *
+   * Acquisition here is period-scoped: a customer counts for product P when their FIRST
+   * order fell inside the window and contained P — the workbook's own MEMBERS!K test. That
+   * keeps both measures on the same window, which the ② headline figure deliberately does
+   * not do (it is an all-time cohort). Over a window that covers the whole dataset the two
+   * agree exactly, which is what the test asserts.
+   *
+   * Because a first order usually holds several products, the per-product counts sum to
+   * more than the number of customers acquired. Each product gets credit for the basket it
+   * arrived in — that is the whole idea of the co-purchase view, not double counting.
+   */
+  function productScan(base, params) {
+    var rows = base.rows;
+    var start = params.start;
+    var end = params.end;
+    var stat = new Map();
+    var i;
+
+    (params.products || []).forEach(function (p, idx) {
+      stat.set(p.code, {
+        code: p.code, name: p.name, idx: idx,
+        revenue: 0, lines: 0, acquired: 0, repeated: 0, daysSum: 0, daysCount: 0
+      });
+    });
+
+    function entry(code, name) {
+      if (!stat.has(code)) {
+        stat.set(code, {
+          code: code, name: name, idx: 9999,
+          revenue: 0, lines: 0, acquired: 0, repeated: 0, daysSum: 0, daysCount: 0
+        });
+      }
+      return stat.get(code);
+    }
+
+    /* what each product sold inside the window */
+    for (i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (r.saleDate < start || r.saleDate > end) continue;
+      var e = entry(r.code, r.name);
+      e.revenue += r.sgnAmount;
+      e.lines += r.sgnLines;
+    }
+
+    /*
+     * One pass over first orders, rather than re-running the whole cohort per product:
+     * every distinct product in a qualifying first order is credited that customer.
+     */
+    base.members.forEach(function (m) {
+      if (!m.first) return;
+      if (m.first.date < start || m.first.date > end) return;
+      var repeated = m.second !== null;
+      var days = repeated ? dayNumber(m.second.date) - dayNumber(m.first.date) : 0;
+      var seen = new Set();
+      var idxs = base.byOrder.get(m.first.orderNo) || [];
+      for (var k = 0; k < idxs.length; k++) {
+        var row = rows[idxs[k]];
+        if (seen.has(row.code)) continue;
+        seen.add(row.code);
+        var s = entry(row.code, row.name);
+        s.acquired += 1;
+        if (repeated) {
+          s.repeated += 1;
+          s.daysSum += days;
+          s.daysCount += 1;
+        }
+      }
+    });
+
+    var list = Array.from(stat.values()).map(function (e) {
+      return {
+        code: e.code,
+        name: e.name,
+        idx: e.idx,
+        revenue: e.revenue,
+        lines: e.lines,
+        acquired: e.acquired,
+        repeated: e.repeated,
+        repeatRate: e.acquired ? e.repeated / e.acquired : 0,
+        avgDays: e.daysCount ? e.daysSum / e.daysCount : 0
+      };
+    });
+
+    /* Rank 1 is best on each measure; the product master's order breaks ties. */
+    rank(list, 'revenue', 'revenueRank');
+    rank(list, 'acquired', 'acquiredRank');
+    list.forEach(function (e) {
+      /* positive = acquires better than it sells, which is the case worth looking at */
+      e.gap = e.revenueRank - e.acquiredRank;
+    });
+
+    return list.sort(function (a, b) { return a.revenueRank - b.revenueRank; });
+  }
+
+  function rank(list, key, into) {
+    list.slice().sort(function (a, b) {
+      return b[key] - a[key] || a.idx - b.idx;
+    }).forEach(function (e, i) { e[into] = i + 1; });
+  }
+
   global.KPI = {
     buildBase: buildBase,
     compute: compute,
+    productScan: productScan,
     fiscalLabel: fiscalLabel,
     monthLabel: monthLabel,
     edate: edate,

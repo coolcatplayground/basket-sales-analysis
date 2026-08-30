@@ -76,6 +76,7 @@
       <div class="table-actions">
         <button type="button" id="copy-export" class="btn-ghost" data-i18n="btnCopy">コピー</button>
         <button type="button" id="download-export" class="btn-ghost" data-i18n="btnDownload">CSV</button>
+        <button type="button" id="download-xlsx" class="btn-primary" data-i18n="btnXlsx">Excel</button>
       </div>
     </div>
     <p class="table-note" data-i18n="expNote"></p>
@@ -157,6 +158,44 @@
     </details>
   </section>
 
+  <section class="panel" aria-labelledby="kpi3-h">
+    <div class="panel-head">
+      <h2 id="kpi3-h"><span class="num">③</span>
+        <span data-i18n="k3Head">商品別 獲得力</span>
+        <em data-i18n="k3HeadEm">Which products acquire customers</em></h2>
+      <p data-i18n="k3Desc"></p>
+    </div>
+
+    <p class="lead-note" data-i18n-html="k3Lead"></p>
+
+    <figure class="chart-figure">
+      <figcaption>
+        <h3 data-i18n="k3ChartTitle">売上順位 × 獲得順位</h3>
+        <p data-i18n="k3ChartSub"></p>
+      </figcaption>
+      <ul class="chart-legend" id="scatter-legend"></ul>
+      <div class="chart-host" id="chart-scatter"></div>
+    </figure>
+
+    <p class="callout" id="k3-callout" hidden></p>
+
+    <div class="table-scroll table-scroll-products">
+      <table id="product-table" class="data-table sortable">
+        <thead><tr>
+          <th scope="col" data-sort="code" data-i18n="thCode">商品コード</th>
+          <th scope="col" data-sort="name" data-i18n="thName">商品名称</th>
+          <th scope="col" class="num-col" data-sort="revenue" data-i18n="thRevenue">売上金額</th>
+          <th scope="col" class="num-col" data-sort="revenueRank" data-i18n="thRevRank">売上順位</th>
+          <th scope="col" class="num-col" data-sort="acquired" data-i18n="thAcquired">獲得顧客数</th>
+          <th scope="col" class="num-col" data-sort="acquiredRank" data-i18n="thAcqRank">獲得順位</th>
+          <th scope="col" class="num-col" data-sort="gap" data-i18n="thGap">順位差</th>
+          <th scope="col" class="num-col" data-sort="repeatRate" data-i18n="tRepeatRate">リピート率</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
   <section class="panel notes" aria-labelledby="notes-h">
     <h2 id="notes-h"><span data-i18n="notesHead">読み方の注意</span>
       <em data-i18n="notesHeadEm">How to read this</em></h2>
@@ -182,6 +221,7 @@
 
 <script src="js/i18n.js"></script>
 <script src="js/kpi.js"></script>
+<script src="js/xlsx.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/app.js"></script>
 </body>
