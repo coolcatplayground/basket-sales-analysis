@@ -93,8 +93,10 @@ body {
   line-height: 1.25; font-weight: 640; letter-spacing: -0.01em;
 }
 
+/* No measure cap on body copy: paragraphs run the full content width and wrap
+   where the container ends, rather than breaking short of it. */
 .lede {
-  margin: 0; max-width: 68ch;
+  margin: 0;
   color: var(--text-secondary); font-size: 15px;
 }
 
@@ -359,7 +361,7 @@ button:focus-visible, summary:focus-visible {
 .notes dl { margin: 18px 0 0; display: grid; gap: 16px; }
 .notes dt { font-weight: 600; font-size: 14px; margin-bottom: 3px; }
 .notes dd {
-  margin: 0; color: var(--text-secondary); font-size: 14px; max-width: 76ch;
+  margin: 0; color: var(--text-secondary); font-size: 14px;
 }
 .notes code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -371,7 +373,7 @@ button:focus-visible, summary:focus-visible {
 .fineprint {
   margin: 22px 0 0; padding-top: 16px;
   border-top: 1px solid var(--border);
-  font-size: 13px; color: var(--text-muted); max-width: 76ch;
+  font-size: 13px; color: var(--text-muted);
 }
 
 .page-foot {
@@ -379,7 +381,7 @@ button:focus-visible, summary:focus-visible {
   padding: 22px 0 40px;
   font-size: 13px; color: var(--text-muted);
 }
-.page-foot p { margin: 0; max-width: 76ch; }
+.page-foot p { margin: 0; }
 .page-foot code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.9em;
