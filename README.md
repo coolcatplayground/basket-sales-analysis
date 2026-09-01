@@ -1,33 +1,40 @@
 # EC Sales KPI & First-Purchase Basket Analysis
 
 [![verify](https://github.com/coolcatplayground/basket-sales-analysis/actions/workflows/verify.yml/badge.svg)](https://github.com/coolcatplayground/basket-sales-analysis/actions/workflows/verify.yml)
+&nbsp;·&nbsp; **English** · [日本語](README.ja.md)
 
-An Excel-based analytics tool I built for the e-commerce team at my workplace. It turns a raw order
-database into two things the team could not get before: same-day sales KPIs for any product and
-period, and a customer-behaviour view that follows a product from a customer's first purchase
-through to what they bought the second time.
+### Which products bring customers in — not just which ones sell.
 
-> **No company data appears in this repository.** This is a write-up of a tool that runs on an
-> internal SQL Server. Figures below are relative or structural; no revenue, customer counts or real
-> product codes are published. Server names, database names, file paths and vendor table names in
-> the code samples are replaced with placeholders.
+An Excel and SQL Server analytics tool I built for the e-commerce team at my workplace, rebuilt as
+a browser demo you can click through. It follows a product from a customer's **first ever order**
+to what they bought the **second** time — the question a product's own sales line cannot answer.
 
-**Live demo → <https://coolcatplayground.github.io/basket-sales-analysis/>**
-The same calculations running in the browser over the synthetic dataset — change the dates or the
-product code and the KPIs, the two co-purchase tables and the export block all recalculate. No
-Excel, no database, no sign-in. The interface reads in Japanese or English; the switch is in the
-top-right corner, and it opens in whichever your browser asks for. The parameters live in the URL,
-so a particular view can be linked to directly —
-[the CT106 case](https://coolcatplayground.github.io/basket-sales-analysis/?product=CT106).
+**[▶ Open the live demo](https://coolcatplayground.github.io/basket-sales-analysis/)** — no Excel,
+no database, no sign-in. Japanese and English.
+
+![Changing the product recalculates the whole basket analysis](docs/demo.gif)
+
+|  |  |
+|---|---|
+| **The problem** | Every question about sales meant a hand-written query, so a specialist sat between each question and its answer, and nobody asked. |
+| **What I built** | Parameterised KPIs pushed down to SQL Server, plus a first-purchase basket analysis that keeps every line of the qualifying order. |
+| **What changed** | The cost of asking dropped far enough that people ask. The output now feeds a second tool that models seasonality. |
+
+On the demo data the argument comes out concrete: **CT108 毛玉ケアジェル 60g ranks 14th on revenue
+and 7th on customers acquired.** Nothing on a revenue report would make you look at it twice, and
+roughly half the customers it brings in come back. That gap is the whole reason the tool follows a
+product from a customer's first order rather than reading its sales line — and
+[you can check it yourself](https://coolcatplayground.github.io/basket-sales-analysis/?product=CT108),
+because the parameters live in the URL.
 
 ![The dashboard: parameters, the sales roll-up, and the monthly trend](docs/screenshot-dashboard.png)
 
 ![Which products acquire customers: revenue rank against acquisition rank](docs/screenshot-products.png)
 
-On the demo data the argument comes out concrete: **CT108 毛玉ケアジェル 60g ranks 14th on revenue
-and 7th on customers acquired.** Nothing on a revenue report would make you look at it twice, and
-roughly half the customers it brings in come back. That gap is the whole reason the tool follows a
-product from a customer's first order rather than reading its sales line.
+> **No company data appears in this repository.** This is a write-up of a tool that runs on an
+> internal SQL Server; everything you can click on runs on synthetic data. No revenue, customer
+> counts or real product codes are published, and server names, database names, file paths and
+> vendor table names are replaced with placeholders.
 
 ---
 
@@ -315,15 +322,6 @@ marks, the table rows, and the absence of the page's own error banner. No automa
 Chrome's `--dump-dom` prints the DOM once the scripts have run.
 
 ### One behaviour worth knowing about
-
-`js/kpi.js` is a column-by-column port of the workbook — each block names the sheet and column it
-came from, so the two can be read side by side. To check the port, the same specification was
-implemented a second time in Python, deliberately the other way round: where the workbook (and
-therefore the JS) uses row-relative running counters to flag a customer's first appearance, the
-reference computes the same quantities as set cardinalities. The two were then compared across
-seven parameter sets — whole catalogue and single product, wide and narrow windows, a window
-containing no orders at all — covering every figure on the page: the eight summary measures, every
-monthly row, all 123 cohort rows, and both TOP10 tables. All values agree exactly.
 
 **①売上集計 does not filter on the product code.** The product code selects the basket for ②; the
 roll-up is a period filter over the whole catalogue. That is what the dashboard's own instructions

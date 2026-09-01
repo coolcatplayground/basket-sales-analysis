@@ -607,6 +607,24 @@
 
     $('main').setAttribute('aria-busy', 'false');
     recompute();
+    honourHash();
+  }
+
+  /*
+   * The browser acts on #section links while the page is still empty — the data arrives
+   * over fetch, so everything below moves once it lands and the anchor no longer points at
+   * what it named. Re-apply it after the first render, so a link to a section arrives at
+   * that section.
+   */
+  function honourHash() {
+    if (!location.hash || location.hash.length < 2) return;
+    var target = null;
+    try {
+      target = document.querySelector(location.hash);
+    } catch (e) {
+      return;   /* not a usable selector; nothing to scroll to */
+    }
+    if (target) target.scrollIntoView();
   }
 
   function load() {
