@@ -27,13 +27,22 @@
       ctrlEnd: '終了日',
       ctrlProduct: '商品コード',
       ctrlReset: '既定値に戻す',
-      ctrlNote: '商品コードは <strong>②カゴ分析</strong> の対象を決めます。' +
-                '①売上集計は期間のみのフィルタで、全商品が対象です — ワークブックと同じ挙動です。',
+      ctrlNote: '商品コードは複数選べます（本番版の <code>ct101, ct102</code> のような入力と同じ）。' +
+                'V3 からは <strong>①売上集計</strong> も選んだ商品に絞り込まれ、' +
+                '②カゴ分析・④LTV の対象も同じ商品で決まります。',
       productAll: 'All — 全商品',
+      pickAll: '全商品に戻す',
+      pickDone: '閉じる',
+      pickCount: '{n} 商品を選択中',
+      ctrlCohortStart: 'LTV 獲得期間 開始',
+      ctrlCohortEnd: 'LTV 獲得期間 終了',
+      ctrlCohortNote: '④LTV は、初回購入日がこの期間に入る会員だけを追いかけます。' +
+                      '長く追うほど後ろの区分が読めるので、終了日は1年以上前がおすすめです。',
+      errCohortDates: 'LTV 獲得期間の開始日が終了日より後になっています。',
 
       k1Head: '売上集計',
       k1HeadEm: 'Sales roll-up',
-      k1Desc: '期間フィルタ適用。返品（ステータス 14）は減算されます。',
+      k1Desc: '期間と商品コードで絞り込み。返品（ステータス 14）は減算されます。',
 
       tRevenue: '売上金額',
       tUnits: '購入個数',
@@ -100,12 +109,24 @@
       k2Head: 'カゴ分析：初回購入 → 2回目購入',
       k2HeadEm: 'First-purchase basket',
       k2ScopeAll: '全商品・全期間コホート。初回購入の伝票をまるごと数えています。',
-      k2ScopeProduct: '{code} を含む初回購入の伝票を対象にした、全期間コホート。',
+      k2ScopeProduct: '{code} のいずれかを含む初回購入の伝票を対象にした、全期間コホート。',
 
       tAcquired: '初回購入顧客数',
       tRepeated: 'リピート数',
       tRepeatRate: 'リピート率',
       tAvgDays: '平均リピート日数',
+      tMedianDays: '中央値リピート日数',
+      tMinDays: '最短リピート日数',
+      tAvgTracked: '平均追跡日数',
+
+      bandHead: 'リピートまでの時間バンド',
+      bandNote: '「90日以内に戻ったか」は、初回購入から90日以上たった会員でしか判定できません。' +
+                'そこで各バンドは<strong>そのバンドを見届けられる会員だけ</strong>を分母にしています' +
+                '（打ち切り対策）。生涯の行だけは期限がないので全員が対象です。',
+      thBand: 'バンド',
+      thEligible: '追跡可能会員数',
+      bandWithin: '{d}日以内',
+      bandLifetime: '生涯（期間無制限）',
 
       top1Note: '対象商品を含む<strong>初回購入</strong>の伝票に、他に何が入っていたか。' +
                 '伝票の全明細を保持するため、これは本物の併売リストです。',
@@ -123,6 +144,35 @@
                   '10 年分の履歴に均してしまうと意味が消えます。',
       thCohort: '登録月度',
 
+      k4Head: 'LTV 解析',
+      k4HeadEm: 'Lifetime value & allowable CAC',
+      k4Scope: '{products}・初回購入日 {from} 〜 {to} の獲得会員を、初回購入からの経過日数で追跡。',
+      k4ScopeAll: '全商品',
+      tLtvAcquired: '獲得会員数',
+      tSinceEnd: '獲得期間終了からの日数',
+      tGp90: '90日 累計粗利/人',
+      tGp365: '365日 累計粗利/人',
+      tCac365: '許容CAC（365日・3対1）',
+      matureAll: '獲得期間の終了から {d} 日。<strong>730日</strong>までの LTV が読めます。',
+      mature365: '獲得期間の終了から {d} 日。<strong>365日</strong>までの LTV が読めます（730日の行は母数不足で過小評価になります）。',
+      mature180: '獲得期間の終了から {d} 日。<strong>180日</strong>までの LTV が読めます（365日以降の行は信用できません）。',
+      matureNone: '獲得期間の終了から {d} 日。<strong>獲得期間が新しすぎます</strong> — どの行も追跡期間が足りません。終了日を1年以上前にしてください。',
+      k4ChartTitle: 'LTV カーブ（会員1人あたり累計粗利）',
+      k4ChartSub: '経過区分ごとの粗利を積み上げ、獲得会員全員の人数で割った値。線ではなく区分の累計です。',
+      legCumGp: '累計粗利/人',
+      thElapsed: '経過区分',
+      thGp: '粗利（区分内）',
+      thCumGpPer: '累計粗利/人',
+      thCac: '許容CAC（3対1）',
+      thBuyers: '購入会員数',
+      thMissingCost: '原価欠落件数',
+      elapsedUpTo: '{d}日まで',
+      elapsedOver: '730日超',
+      ltvEmpty: 'この獲得期間に該当する会員がいません。',
+      ltvCheckMatch: '②の初回購入顧客数と④の獲得会員数は、どちらも {n} 人で一致しています。',
+      ltvCheckDiff: '②の初回購入顧客数は {kpi2} 人（全期間）、④の獲得会員数は {ltv} 人（獲得期間内）です。' +
+                    '本番版ではこの差を「CohortStart / CohortEnd の範囲を確認」という警告として出します。',
+
       notesHead: '読み方の注意',
       notesHeadEm: 'How to read this',
       note1dt: '月度は暦月ではない',
@@ -139,11 +189,19 @@
       note4dt: '「初回購入のカゴ」は伝票まるごと',
       note4dd: 'フィルタに一致した明細だけでなく、その伝票の全明細を残します。' +
                'だから併売表がフィルタの言い換えではなく、情報になります。',
+      note5dt: 'バンドの分母は「見届けられる会員」だけ',
+      note5dd: '最近入った会員を 365日バンドの分母に入れると、まだ戻る時間がなかっただけの人が' +
+               '「戻らなかった」扱いになり、率が不当に下がります。追跡日数は今日までで数えます。',
+      note6dt: 'LTV は売上ではなく粗利、許容CAC は 3 対 1',
+      note6dd: '粗利 = 売上金額 − 原価 × 購入個数（返品は符号付き）。累計粗利を<strong>獲得会員全員</strong>で割るので、' +
+               '二度と戻らなかった会員も分母に入ります。その 1/3 が、LTV:CAC = 3:1 を守れる 1人あたり獲得費用の上限です。' +
+               'デモの原価は架空の値です。',
       fineprint: '本番版は SQL Server 上の約10年・300万行超に対して動き、KPI1 は数秒、' +
                  'KPI2 は2〜20分かかります。このデモは 6,824 行の合成データで、' +
                  'ブラウザ内で即時に再計算します。実データ・実商品コードは一切含まれません。',
-      footer: '合成データによるデモ。計算ロジックは <code>EC_Sales_Basket_Analysis_Demo.xlsx</code> の' +
-              '各シートを移植したもので、出力は独立実装と突き合わせて検証しています。',
+      footer: '合成データによるデモ。①〜③の基本ロジックは <code>EC_Sales_Basket_Analysis_Demo.xlsx</code>（V2）の' +
+              '各シートを移植し、複数商品・時間バンド・LTV は本番 V3 の Power Query から移植しています。' +
+              '出力は独立実装と突き合わせて検証しています。',
 
       errDates: '開始日が終了日より後になっています。日付を入れ替えてください。',
       errLoad: 'データを読み込めませんでした ({msg})。<br>' +
@@ -168,14 +226,23 @@
       ctrlEnd: 'End date',
       ctrlProduct: 'Product code',
       ctrlReset: 'Reset',
-      ctrlNote: 'The product code selects the basket for <strong>② the basket analysis</strong>. ' +
-                '① the sales roll-up is filtered by period only and covers the whole catalogue — ' +
-                'the same behaviour as the workbook.',
+      ctrlNote: 'Pick one product or several — the production tool takes a list like ' +
+                '<code>ct101, ct102</code>. Since V3, <strong>① the sales roll-up</strong> is ' +
+                'filtered to the chosen products too, and the same choice sets the cohort for ② and ④.',
       productAll: 'All — every product',
+      pickAll: 'Back to all',
+      pickDone: 'Done',
+      pickCount: '{n} products selected',
+      ctrlCohortStart: 'LTV cohort from',
+      ctrlCohortEnd: 'LTV cohort to',
+      ctrlCohortNote: '④ follows only members whose first purchase falls in this window. The ' +
+                      'older the window, the further along the curve you can read, so end it at ' +
+                      'least a year back.',
+      errCohortDates: 'The LTV cohort starts after it ends. Swap the dates round.',
 
       k1Head: 'Sales roll-up',
       k1HeadEm: '売上集計',
-      k1Desc: 'Filtered by period. Returns (status 14) subtract rather than disappear.',
+      k1Desc: 'Filtered by period and product. Returns (status 14) subtract rather than disappear.',
 
       tRevenue: 'Net revenue',
       tUnits: 'Units',
@@ -252,12 +319,25 @@
       k2HeadEm: 'カゴ分析',
       k2ScopeAll: 'Whole catalogue, all-time cohort. Every line of the qualifying first order ' +
                   'is counted.',
-      k2ScopeProduct: 'All-time cohort of first orders containing {code}.',
+      k2ScopeProduct: 'All-time cohort of first orders containing any of {code}.',
 
       tAcquired: 'Customers acquired',
       tRepeated: 'Came back',
       tRepeatRate: 'Repeat rate',
       tAvgDays: 'Avg days to return',
+      tMedianDays: 'Median days to return',
+      tMinDays: 'Fastest return',
+      tAvgTracked: 'Avg days tracked',
+
+      bandHead: 'Repeat rate by time band',
+      bandNote: 'Whether someone came back within 90 days can only be judged for members whose ' +
+                'first purchase is at least 90 days old. So each band counts <strong>only the ' +
+                'members tracked long enough to see it</strong> (a guard against right-censoring). ' +
+                'The lifetime row has no horizon, so everyone is in it.',
+      thBand: 'Band',
+      thEligible: 'Members trackable',
+      bandWithin: 'within {d} days',
+      bandLifetime: 'lifetime (no limit)',
 
       top1Note: 'What else was in the <strong>first order</strong> that contained the product. ' +
                 'Every line of the order is kept, which is what makes this a real co-purchase list ' +
@@ -275,6 +355,35 @@
       cohortNote: 'Acquisition should be read against the month those customers actually joined. ' +
                   'Smeared across ten years of history it stops meaning anything.',
       thCohort: 'Registration month',
+
+      k4Head: 'Lifetime value & allowable CAC',
+      k4HeadEm: 'LTV 解析',
+      k4Scope: 'Members acquired through {products}, first purchase {from} – {to}, followed by days since that first purchase.',
+      k4ScopeAll: 'any product',
+      tLtvAcquired: 'Members acquired',
+      tSinceEnd: 'Days since cohort end',
+      tGp90: 'Cum. gross profit / member, 90d',
+      tGp365: 'Cum. gross profit / member, 365d',
+      tCac365: 'Allowable CAC (365d, 3:1)',
+      matureAll: '{d} days since the cohort ended. The curve reads out to <strong>730 days</strong>.',
+      mature365: '{d} days since the cohort ended. The curve reads out to <strong>365 days</strong> (the 730-day row has too few members old enough, so it understates).',
+      mature180: '{d} days since the cohort ended. The curve reads out to <strong>180 days</strong> (do not trust 365 days onward).',
+      matureNone: '{d} days since the cohort ended. <strong>This cohort is too recent</strong> — no row has been tracked long enough. End the window at least a year back.',
+      k4ChartTitle: 'LTV curve — cumulative gross profit per member',
+      k4ChartSub: 'Gross profit summed bucket by bucket and divided by every member acquired. Cumulative by bucket, not a smooth line.',
+      legCumGp: 'Cum. gross profit / member',
+      thElapsed: 'Days since first purchase',
+      thGp: 'Gross profit in bucket',
+      thCumGpPer: 'Cum. GP / member',
+      thCac: 'Allowable CAC (3:1)',
+      thBuyers: 'Members buying',
+      thMissingCost: 'Lines missing cost',
+      elapsedUpTo: 'up to {d}',
+      elapsedOver: 'over 730',
+      ltvEmpty: 'No members were acquired in this cohort window.',
+      ltvCheckMatch: 'Customers acquired in ② and members acquired in ④ agree: {n} each.',
+      ltvCheckDiff: '② counts {kpi2} customers acquired (all time); ④ counts {ltv} (inside the cohort ' +
+                    'window). The production tool raises this gap as a warning to check CohortStart / CohortEnd.',
 
       notesHead: 'How to read this',
       notesHeadEm: '読み方の注意',
@@ -295,12 +404,21 @@
       note4dd: 'Not just the line that matched the filter — every line of that order is kept. ' +
                'That is why the co-purchase tables carry information instead of restating the ' +
                'filter.',
+      note5dt: 'A band only counts members who could have made it',
+      note5dd: 'Put last month\'s new members in the 365-day denominator and people who simply have ' +
+               'not had time to come back are counted as not coming back, dragging the rate down. ' +
+               'Tracking days run up to today.',
+      note6dt: 'LTV is gross profit, not revenue — and CAC is held to 3:1',
+      note6dd: 'Gross profit = revenue − unit cost × units (returns signed). The running total is divided ' +
+               'by <strong>every member acquired</strong>, including the ones who never came back. A third of ' +
+               'that is the most one acquisition may cost while keeping LTV:CAC at 3:1. The demo\'s costs are invented.',
       fineprint: 'The production tool runs against roughly ten years and 3 million+ rows on SQL ' +
                  'Server: KPI1 returns in seconds, KPI2 takes 2–20 minutes. This demo runs on ' +
                  '6,824 synthetic rows and recalculates instantly in the browser. No real figures ' +
                  'or product codes appear anywhere in it.',
-      footer: 'A demo on synthetic data. The calculations are ported from the sheets of ' +
-              '<code>EC_Sales_Basket_Analysis_Demo.xlsx</code>, and the output is checked against ' +
+      footer: 'A demo on synthetic data. The core of ①–③ is ported from the sheets of ' +
+              '<code>EC_Sales_Basket_Analysis_Demo.xlsx</code> (V2); multiple products, time bands ' +
+              'and LTV are ported from the production V3 Power Query. The output is checked against ' +
               'an independent implementation of the same specification.',
 
       errDates: 'The start date is after the end date. Swap them round.',

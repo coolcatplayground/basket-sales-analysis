@@ -203,6 +203,42 @@ button:focus-visible, summary:focus-visible {
 }
 .btn-ghost:hover { color: var(--text-primary); border-color: var(--axis); }
 
+.control-row-sub { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--grid); }
+.control-aside { margin: 0; flex: 1 1 260px; font-size: 12px; color: var(--text-muted); align-self: center; }
+
+/* product picker: several codes at once, like the workbook's "ct101, ct102, cs103" */
+.picker { position: relative; }
+.picker summary {
+  list-style: none; cursor: pointer;
+  font-size: 14px; padding: 8px 30px 8px 10px;
+  color: var(--text-primary); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.picker summary::-webkit-details-marker { display: none; }
+.picker summary::after {
+  content: "\25BE"; position: absolute; right: 11px; top: 8px; color: var(--text-muted);
+}
+.picker-panel {
+  position: absolute; z-index: 5; left: 0; right: 0; top: calc(100% + 4px);
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.14); padding: 10px;
+}
+.picker-actions { display: flex; gap: 8px; justify-content: space-between; margin-bottom: 8px; }
+.picker-list { max-height: 300px; overflow-y: auto; display: grid; gap: 2px; }
+.picker-list label {
+  display: flex; gap: 8px; align-items: center;
+  font-size: 13px; padding: 5px 6px; border-radius: 4px; cursor: pointer;
+}
+.picker-list label:hover { background: var(--surface-2); }
+.picker-list code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: var(--text-secondary); }
+
+.band-block { margin: 0 0 24px; }
+#ltv-check.table-note-after { margin: 14px 0 0; }
+.band-block .table-scroll { max-width: 640px; }
+.field-cohort { flex: 0 1 230px; }
+.data-table tr.is-thin td { color: var(--text-muted); }
+
 .control-note, .table-note {
   margin: 14px 0 0; font-size: 13px; color: var(--text-secondary);
 }

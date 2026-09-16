@@ -33,7 +33,8 @@ function loadDemoData(repo) {
   ).map((r) => ({
     code: r['商品コード'],
     name: r['商品名称'],
-    nameEn: r['商品名称_EN']
+    nameEn: r['商品名称_EN'],
+    cost: r['原価'] === undefined || r['原価'] === '' ? null : +r['原価']
   }));
 
   return { orders, products };

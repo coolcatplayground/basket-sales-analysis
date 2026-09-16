@@ -6,10 +6,15 @@
 (function () {
   'use strict';
 
-  var DEFAULTS = { start: 20250121, end: 20260620, product: 'All' };
+  var DEFAULTS = {
+    start: 20250121, end: 20260620, product: 'All',
+    /* ends a year before the data does, so the LTV curve has room to be read */
+    cohortStart: 20231221, cohortEnd: 20250620
+  };
 
   var state = {
     base: null, products: [], result: null, scan: null,
+    selected: [],   /* chosen product codes; empty means All */
     sort: { key: 'revenueRank', dir: 1 }
   };
 
@@ -39,6 +44,16 @@
   }
 
   function fromInputDate(s) { return parseInt(s.replace(/-/g, ''), 10); }
+
+  /* 追跡日数 runs to today, as GETDATE() does in the production query. */
+  function todayInt() {
+    var d = new Date();
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  }
+
+  function fmtDateInt(n) { return toInputDate(n).replace(/-/g, '/'); }
+
+  function fmtMaybeDays(n) { return n === null || n === undefined ? '—' : n.toFixed(1); }
 
   function fail(message) {
     var banner = $('error-banner');
@@ -184,8 +199,14 @@
       { label: t('tAcquired'), value: fmtInt(c.acquired), unit: t('uPeople') },
       { label: t('tRepeated'), value: fmtInt(c.repeated), unit: t('uPeople') },
       { label: t('tRepeatRate'), value: fmtPct(c.repeatRate) },
-      { label: t('tAvgDays'), value: fmtDays(c.avgDays), unit: t('uDays') }
+      { label: t('tAvgDays'), value: fmtDays(c.avgDays), unit: t('uDays') },
+      { label: t('tMedianDays'), value: fmtMaybeDays(c.medianDays), unit: t('uDays') },
+      { label: t('tMinDays'), value: c.minDays === null ? '—' : fmtInt(c.minDays), unit: t('uDays') },
+      { label: t('tAvgTracked'), value: fmtMaybeDays(c.avgTracked), unit: t('uDays') },
+      { label: t('bandWithin', { d: 90 }), value: bandRateText(r.bands[1]) }
     ]);
+
+    renderBands(r.bands);
 
     rankTable($('top1st'), r.top1st);
     rankTable($('top2nd'), r.top2nd);
@@ -196,7 +217,8 @@
       var tr = document.createElement('tr');
       [row.label, fmtInt(row.acquired), fmtInt(row.repeated),
        row.acquired ? fmtPct(row.repeatRate) : '—',
-       row.repeated ? fmtDays(row.avgDays) : '—'
+       row.repeated ? fmtDays(row.avgDays) : '—',
+       fmtMaybeDays(row.medianDays)
       ].forEach(function (v, i) {
         var cell = document.createElement(i === 0 ? 'th' : 'td');
         if (i === 0) cell.setAttribute('scope', 'row');
@@ -206,6 +228,138 @@
       body.appendChild(tr);
     });
     $('cohort-count').textContent = t('cohortCount', { n: r.cohorts.rows.length });
+  }
+
+  function bandRateText(b) {
+    return b.repeatRate === null ? '—' : fmtPct(b.repeatRate);
+  }
+
+  function renderBands(bands) {
+    var body = $('band-table').querySelector('tbody');
+    body.textContent = '';
+    bands.forEach(function (b) {
+      var tr = document.createElement('tr');
+      var head = document.createElement('th');
+      head.setAttribute('scope', 'row');
+      head.textContent = b.band === null ? t('bandLifetime') : t('bandWithin', { d: b.band });
+      tr.appendChild(head);
+
+      [fmtInt(b.eligible), fmtInt(b.repeated)].forEach(function (v) {
+        var td = document.createElement('td');
+        td.className = 'num-col';
+        td.textContent = v;
+        tr.appendChild(td);
+      });
+
+      var rate = document.createElement('td');
+      rate.className = 'num-col';
+      rate.appendChild(document.createTextNode(bandRateText(b)));
+      if (b.repeatRate !== null) {
+        var bar = document.createElement('span');
+        bar.className = 'cell-bar';
+        bar.style.width = Math.max(4, b.repeatRate * 100) + '%';
+        rate.appendChild(bar);
+      }
+      tr.appendChild(rate);
+      body.appendChild(tr);
+    });
+  }
+
+  /* --- ④ LTV ------------------------------------------------------------- */
+
+  function elapsedLabel(row) {
+    return row.bucket === null ? t('elapsedOver') : t('elapsedUpTo', { d: row.bucket });
+  }
+
+  function renderLtv(r, params) {
+    var ltv = r.ltv;
+    var rows = ltv.rows;
+    var n = ltv.acquired;
+
+    $('ltv-scope').textContent = t('k4Scope', {
+      products: productLabel(params.productCode, t('k4ScopeAll')),
+      from: fmtDateInt(ltv.cohortStart),
+      to: fmtDateInt(ltv.cohortEnd)
+    });
+
+    var key = ltv.readableTo === 730 ? 'matureAll' : ltv.readableTo === 365 ? 'mature365' :
+      ltv.readableTo === 180 ? 'mature180' : 'matureNone';
+    $('ltv-maturity').innerHTML = t(key, { d: fmtInt(ltv.daysSinceCohortEnd) });
+
+    function money(v) { return v === null ? '—' : fmtYen(v); }
+    tiles($('ltv-tiles'), [
+      { label: t('tLtvAcquired'), value: fmtInt(n), unit: t('uPeople') },
+      { label: t('tGp90'), value: money(rows[0].perMember) },
+      { label: t('tGp365'), value: money(rows[2].perMember) },
+      { label: t('tCac365'), value: money(rows[2].allowableCac) }
+    ]);
+
+    var host = $('chart-ltv');
+    var legendHost = $('ltv-legend');
+    legendHost.textContent = '';
+    if (!n) {
+      host.textContent = '';
+      var p = document.createElement('p');
+      p.className = 'is-loading';
+      p.textContent = t('ltvEmpty');
+      host.appendChild(p);
+    } else {
+      var series = [{ label: t('legCumGp'), color: 'var(--series-1)',
+                      value: function (row) { return Math.max(row.perMember, 0); } }];
+      var li = document.createElement('li');
+      var sw = document.createElement('span');
+      sw.className = 'swatch';
+      sw.style.background = 'var(--series-1)';
+      li.appendChild(sw);
+      li.appendChild(document.createTextNode(t('legCumGp')));
+      legendHost.appendChild(li);
+
+      Charts.render(host, rows.map(function (row) {
+        return Object.assign({ label: elapsedLabel(row) }, row);
+      }), {
+        ariaLabel: t('k4ChartTitle'),
+        series: series,
+        max: Math.max.apply(null, rows.map(function (row) { return row.perMember; }).concat([1])),
+        total: function (row) { return row.perMember; },
+        /* per-member figures are thousands, not millions: 万 ticks would round to 2万, 2万 */
+        tickFormat: function (v) { return fmtYen(v); },
+        labelPeak: true,
+        peakFormat: function (v) { return fmtYen(v); },
+        tipHtml: function (row) {
+          return '<b>' + row.label + '</b>' +
+            '<div class="row"><span>' + t('thCumGpPer') + '</span><span class="v">' +
+            fmtYen(row.perMember) + '</span></div>' +
+            '<div class="row"><span>' + t('thCac') + '</span><span class="v">' +
+            fmtYen(row.allowableCac) + '</span></div>' +
+            '<div class="row"><span>' + t('thBuyers') + '</span><span class="v">' +
+            fmtInt(row.buyers) + '</span></div>';
+        }
+      });
+    }
+
+    var body = $('ltv-table').querySelector('tbody');
+    body.textContent = '';
+    rows.forEach(function (row) {
+      var tr = document.createElement('tr');
+      /* rows the cohort is not yet old enough to support are shown, but muted */
+      if ((row.bucket === null ? 731 : row.bucket) > ltv.readableTo) tr.className = 'is-thin';
+      [elapsedLabel(row), fmtInt(row.grossProfit), money(row.perMember),
+       money(row.allowableCac), fmtInt(row.buyers), fmtInt(row.missingCost)
+      ].forEach(function (v, i) {
+        var cell = document.createElement(i === 0 ? 'th' : 'td');
+        if (i === 0) cell.setAttribute('scope', 'row');
+        else cell.className = 'num-col';
+        cell.textContent = v;
+        tr.appendChild(cell);
+      });
+      body.appendChild(tr);
+    });
+
+    /* 整合性チェック — the production macro compares these two head counts */
+    var kpi2 = r.cohorts.total.acquired;
+    $('ltv-check').textContent = kpi2 === n
+      ? t('ltvCheckMatch', { n: fmtInt(n) })
+      : t('ltvCheckDiff', { kpi2: fmtInt(kpi2), ltv: fmtInt(n) });
   }
 
   function rankTable(table, rows) {
@@ -395,7 +549,7 @@
   }
 
   function downloadExport() {
-    var name = currentParams().productCode;
+    var name = currentParams().productCode.replace(/,/g, '+');
     saveBlob(new Blob(['﻿' + exportText(state.result, ',')],
                       { type: 'text/csv;charset=utf-8' }), 'monthly_' + name + '.csv');
   }
@@ -408,6 +562,8 @@
   function sheetNameForExport() {
     var code = currentParams().productCode;
     if (String(code).toUpperCase() === 'ALL') return t('allProductsSheet');
+    /* several products: there is no one product name, so the sheet carries the codes */
+    if (code.indexOf(',') !== -1) return code.replace(/,/g, '+');
     var match = null;
     state.products.forEach(function (p) {
       if (p.code === code) match = p;
@@ -477,6 +633,8 @@
     if (params.start !== DEFAULTS.start) q.push('start=' + params.start);
     if (params.end !== DEFAULTS.end) q.push('end=' + params.end);
     if (params.productCode !== DEFAULTS.product) q.push('product=' + params.productCode);
+    if (params.cohortStart !== DEFAULTS.cohortStart) q.push('cstart=' + params.cohortStart);
+    if (params.cohortEnd !== DEFAULTS.cohortEnd) q.push('cend=' + params.cohortEnd);
     var url = location.pathname + (q.length ? '?' + q.join('&') : '');
     history.replaceState(null, '', url);
   }
@@ -489,7 +647,7 @@
       var bits = pair.split('=');
       var k = decodeURIComponent(bits[0]);
       var v = decodeURIComponent(bits[1] || '');
-      if (k === 'start' || k === 'end') {
+      if (k === 'start' || k === 'end' || k === 'cstart' || k === 'cend') {
         var n = parseInt(v, 10);
         /* only accept a well-formed YYYYMMDD, so a mangled link falls back to the default */
         if (/^\d{8}$/.test(v) && n) out[k] = n;
@@ -509,7 +667,7 @@
   function localizedProducts() {
     var en = I18N.lang() === 'en';
     return state.products.map(function (p) {
-      return { code: p.code, name: en && p.nameEn ? p.nameEn : p.name };
+      return { code: p.code, name: en && p.nameEn ? p.nameEn : p.name, cost: p.cost };
     });
   }
 
@@ -517,15 +675,28 @@
     return {
       start: fromInputDate($('start').value) || DEFAULTS.start,
       end: fromInputDate($('end').value) || DEFAULTS.end,
-      productCode: $('product').value || DEFAULTS.product,
+      productCode: state.selected.length ? state.selected.join(',') : DEFAULTS.product,
+      cohortStart: fromInputDate($('cohort-start').value) || DEFAULTS.cohortStart,
+      cohortEnd: fromInputDate($('cohort-end').value) || DEFAULTS.cohortEnd,
+      asOf: todayInt(),
       products: localizedProducts()
     };
+  }
+
+  /* "All", or the codes with commas and a space, for sentences */
+  function productLabel(productCode, allText) {
+    return String(productCode).toUpperCase() === 'ALL'
+      ? allText : String(productCode).split(',').join(', ');
   }
 
   function recompute() {
     var params = currentParams();
     if (params.start > params.end) {
       fail(t('errDates'));
+      return;
+    }
+    if (params.cohortStart > params.cohortEnd) {
+      fail(t('errCohortDates'));
       return;
     }
     $('error-banner').hidden = true;
@@ -537,54 +708,106 @@
     renderMonthlyTable(state.result);
     renderKpi2(state.result);
     renderProductScan();
+    renderLtv(state.result, params);
     writeUrl(params);
 
     $('kpi2-scope').textContent = params.productCode.toUpperCase() === 'ALL'
       ? t('k2ScopeAll')
-      : t('k2ScopeProduct', { code: params.productCode });
+      : t('k2ScopeProduct', { code: productLabel(params.productCode) });
   }
 
   /* --- boot ------------------------------------------------------------- */
 
+  /*
+   * The product picker. The workbook takes "All" or a comma-separated list in one cell;
+   * here that list is a set of checkboxes, and "nothing ticked" means All.
+   */
   function fillProducts() {
-    var select = $('product');
-    var keep = select.value;
-    select.textContent = '';
-    var all = document.createElement('option');
-    all.value = 'All';
-    all.textContent = t('productAll');
-    select.appendChild(all);
+    var list = $('product-list');
+    list.textContent = '';
+    var chosen = new Set(state.selected);
     localizedProducts().forEach(function (p) {
-      var opt = document.createElement('option');
-      opt.value = p.code;
-      opt.textContent = p.code + ' — ' + p.name;
-      select.appendChild(opt);
+      var label = document.createElement('label');
+      var box = document.createElement('input');
+      box.type = 'checkbox';
+      box.value = p.code;
+      box.checked = chosen.has(p.code);
+      box.addEventListener('change', function () {
+        var picked = [].map.call(list.querySelectorAll('input:checked'), function (x) {
+          return x.value;
+        });
+        state.selected = picked;
+        updatePickerSummary();
+        recompute();
+      });
+      var code = document.createElement('code');
+      code.textContent = p.code;
+      label.appendChild(box);
+      label.appendChild(code);
+      label.appendChild(document.createTextNode(p.name));
+      list.appendChild(label);
     });
-    select.value = keep || DEFAULTS.product;
+    updatePickerSummary();
+  }
+
+  function updatePickerSummary() {
+    var summary = $('product-summary');
+    var sel = state.selected;
+    if (!sel.length) {
+      summary.textContent = t('productAll');
+    } else if (sel.length === 1) {
+      var p = localizedProducts().filter(function (x) { return x.code === sel[0]; })[0];
+      summary.textContent = sel[0] + (p ? ' — ' + p.name : '');
+    } else {
+      summary.textContent = t('pickCount', { n: sel.length }) + ': ' + sel.join(', ');
+    }
+  }
+
+  /* keep only codes the master knows, in the master's order */
+  function sanitiseSelection(codes) {
+    var want = new Set(codes.map(function (c) { return c.trim().toUpperCase(); }));
+    return state.products.map(function (p) { return p.code; })
+      .filter(function (c) { return want.has(c.toUpperCase()); });
   }
 
   function boot(orders, products) {
     state.products = products;
     state.base = KPI.buildBase(orders);
 
-    fillProducts();
-
     var initial = readUrl();
     $('start').value = toInputDate(initial.start || DEFAULTS.start);
     $('end').value = toInputDate(initial.end || DEFAULTS.end);
-    $('product').value = initial.product && $('product').querySelector(
-      'option[value="' + initial.product.replace(/"/g, '') + '"]')
-      ? initial.product : DEFAULTS.product;
+    $('cohort-start').value = toInputDate(initial.cstart || DEFAULTS.cohortStart);
+    $('cohort-end').value = toInputDate(initial.cend || DEFAULTS.cohortEnd);
+    state.selected = initial.product && initial.product.toUpperCase() !== 'ALL'
+      ? sanitiseSelection(initial.product.split(',')) : [];
+    fillProducts();
 
     wireSorting();
 
-    ['start', 'end', 'product'].forEach(function (id) {
+    ['start', 'end', 'cohort-start', 'cohort-end'].forEach(function (id) {
       $(id).addEventListener('change', recompute);
+    });
+    $('product-all').addEventListener('click', function () {
+      state.selected = [];
+      fillProducts();
+      recompute();
+    });
+    $('product-close').addEventListener('click', function () {
+      $('product-picker').open = false;
+    });
+    /* a click anywhere else closes the picker, as a native select would */
+    document.addEventListener('click', function (e) {
+      var picker = $('product-picker');
+      if (picker.open && !picker.contains(e.target)) picker.open = false;
     });
     $('reset').addEventListener('click', function () {
       $('start').value = toInputDate(DEFAULTS.start);
       $('end').value = toInputDate(DEFAULTS.end);
-      $('product').value = DEFAULTS.product;
+      $('cohort-start').value = toInputDate(DEFAULTS.cohortStart);
+      $('cohort-end').value = toInputDate(DEFAULTS.cohortEnd);
+      state.selected = [];
+      fillProducts();
       recompute();
     });
     $('download-export').addEventListener('click', downloadExport);
@@ -601,7 +824,10 @@
     window.addEventListener('resize', function () {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(function () {
-        if (state.result) renderCharts(state.result);
+        if (state.result) {
+          renderCharts(state.result);
+          renderLtv(state.result, currentParams());
+        }
       }, 150);
     });
 
@@ -653,7 +879,10 @@
         };
       });
       var products = parseCsv(texts[1]).map(function (r) {
-        return { code: r['商品コード'], name: r['商品名称'], nameEn: r['商品名称_EN'] };
+        return {
+          code: r['商品コード'], name: r['商品名称'], nameEn: r['商品名称_EN'],
+          cost: r['原価'] === undefined || r['原価'] === '' ? null : +r['原価']
+        };
       });
       boot(orders, products);
     }).catch(function (err) {

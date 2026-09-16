@@ -5,7 +5,8 @@ Run every check over the demo engine, and fail loudly if any of them disagree.
 
 1. The engine (js/kpi.js) against reference_impl.py — an independent implementation of the
    same specification, written set-wise where the engine uses row-relative running
-   counters. Compared across every scenario in scenarios.json, field by field.
+   counters, and following the V3 queries' own shape for the time bands and the LTV
+   curve. Compared across every scenario in scenarios.json, field by field.
 2. productScan against compute(), product by product, so the one-pass shortcut behind ③
    is held to the same numbers as the long way round.
 3. The month rows of the 月別推移 block against the workbook's own formulas, with the

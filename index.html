@@ -37,11 +37,31 @@
         <span><b data-i18n="ctrlEnd">終了日</b> <em>EndDate</em></span>
         <input type="date" id="end" min="2023-12-21" max="2026-06-20">
       </label>
-      <label class="field field-wide">
-        <span><b data-i18n="ctrlProduct">商品コード</b> <em>ProductCode</em></span>
-        <select id="product"></select>
-      </label>
+      <div class="field field-wide">
+        <span id="product-label"><b data-i18n="ctrlProduct">商品コード</b> <em>ProductCode</em></span>
+        <details class="picker" id="product-picker">
+          <summary id="product-summary" aria-describedby="product-label"></summary>
+          <div class="picker-panel">
+            <div class="picker-actions">
+              <button type="button" id="product-all" class="btn-ghost" data-i18n="pickAll">全商品</button>
+              <button type="button" id="product-close" class="btn-ghost" data-i18n="pickDone">閉じる</button>
+            </div>
+            <div id="product-list" class="picker-list" role="group" aria-labelledby="product-label"></div>
+          </div>
+        </details>
+      </div>
       <button type="button" id="reset" class="btn-ghost" data-i18n="ctrlReset">既定値に戻す</button>
+    </div>
+    <div class="control-row control-row-sub">
+      <label class="field field-cohort">
+        <span><b data-i18n="ctrlCohortStart">LTV 獲得期間 開始</b> <em>CohortStart</em></span>
+        <input type="date" id="cohort-start" min="2023-12-21" max="2026-06-20">
+      </label>
+      <label class="field field-cohort">
+        <span><b data-i18n="ctrlCohortEnd">LTV 獲得期間 終了</b> <em>CohortEnd</em></span>
+        <input type="date" id="cohort-end" min="2023-12-21" max="2026-06-20">
+      </label>
+      <p class="control-aside" data-i18n="ctrlCohortNote"></p>
     </div>
     <p class="control-note" data-i18n-html="ctrlNote"></p>
   </section>
@@ -105,6 +125,22 @@
 
     <div class="tiles" id="kpi2-tiles"></div>
 
+    <div class="band-block">
+      <h3><span data-i18n="bandHead">リピートまでの時間バンド</span> <em>KPI2_BAND</em></h3>
+      <p class="table-note" data-i18n-html="bandNote"></p>
+      <div class="table-scroll">
+        <table id="band-table" class="data-table">
+          <thead><tr>
+            <th scope="col" data-i18n="thBand">バンド</th>
+            <th scope="col" class="num-col" data-i18n="thEligible">追跡可能会員数</th>
+            <th scope="col" class="num-col" data-i18n="tRepeated">リピート数</th>
+            <th scope="col" class="num-col" data-i18n="tRepeatRate">リピート率</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="top-grid">
       <div>
         <h3>TOP10_1ST</h3>
@@ -150,6 +186,7 @@
             <th scope="col" class="num-col" data-i18n="tRepeated">リピート数</th>
             <th scope="col" class="num-col" data-i18n="tRepeatRate">リピート率</th>
             <th scope="col" class="num-col" data-i18n="tAvgDays">平均リピート日数</th>
+            <th scope="col" class="num-col" data-i18n="tMedianDays">中央値リピート日数</th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -195,6 +232,43 @@
     </div>
   </section>
 
+  <section class="panel" aria-labelledby="kpi4-h" id="ltv">
+    <div class="panel-head">
+      <h2 id="kpi4-h"><span class="num">④</span>
+        <span data-i18n="k4Head">LTV 解析</span>
+        <em data-i18n="k4HeadEm">Lifetime value &amp; allowable CAC</em></h2>
+      <p id="ltv-scope"></p>
+    </div>
+
+    <p class="callout" id="ltv-maturity"></p>
+
+    <div class="tiles" id="ltv-tiles"></div>
+
+    <figure class="chart-figure">
+      <figcaption>
+        <h3 data-i18n="k4ChartTitle">LTV カーブ（会員1人あたり累計粗利）</h3>
+        <p data-i18n="k4ChartSub"></p>
+      </figcaption>
+      <ul class="chart-legend" id="ltv-legend"></ul>
+      <div class="chart-host" id="chart-ltv"></div>
+    </figure>
+
+    <div class="table-scroll">
+      <table id="ltv-table" class="data-table">
+        <thead><tr>
+          <th scope="col" data-i18n="thElapsed">経過区分</th>
+          <th scope="col" class="num-col" data-i18n="thGp">粗利</th>
+          <th scope="col" class="num-col" data-i18n="thCumGpPer">累計粗利/人</th>
+          <th scope="col" class="num-col" data-i18n="thCac">許容CAC（3対1）</th>
+          <th scope="col" class="num-col" data-i18n="thBuyers">購入会員数</th>
+          <th scope="col" class="num-col" data-i18n="thMissingCost">原価欠落件数</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="table-note table-note-after" id="ltv-check"></p>
+  </section>
+
   <section class="panel notes" aria-labelledby="notes-h">
     <h2 id="notes-h"><span data-i18n="notesHead">読み方の注意</span>
       <em data-i18n="notesHeadEm">How to read this</em></h2>
@@ -207,6 +281,10 @@
       <dd data-i18n-html="note3dd"></dd>
       <dt data-i18n="note4dt"></dt>
       <dd data-i18n-html="note4dd"></dd>
+      <dt data-i18n="note5dt"></dt>
+      <dd data-i18n-html="note5dd"></dd>
+      <dt data-i18n="note6dt"></dt>
+      <dd data-i18n-html="note6dd"></dd>
     </dl>
     <p class="fineprint" data-i18n="fineprint"></p>
   </section>

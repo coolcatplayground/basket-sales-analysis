@@ -1,31 +1,31 @@
-﻿商品コード,商品名称,商品名称_EN
-CE101,しつけ教室チケット A,Training Class Ticket A
-CE102,しつけ教室チケット S,Training Class Ticket S
-CE103,グルーミング講座,Grooming Workshop
-CE104,オンライン相談パス,Online Consult Pass
-CE105,年間メンバーパス,Annual Member Pass
-CF101,総合栄養食 まぐろ 500g,Complete Diet Tuna 500g
-CF102,総合栄養食 まぐろ 100g,Complete Diet Tuna 100g
-CF103,陶器のごはん皿 S,Ceramic Bowl S
-CF104,給水器フィルター,Water Fountain Filter
-CF105,竹のフードスクープ,Bamboo Food Scoop
-CF106,フードストッカー 1L,Food Storage Jar 1L
-CT101,肉球バーム 100g,Paw Balm 100g
-CT102,肉球バーム 10g,Paw Balm 10g
-CT103,被毛ケアローション 190ml,Coat Care Lotion 190ml
-CT104,もこもこ泡シャンプー 300ml,Foaming Shampoo 300ml
-CT105,ふわもこブラシ,Grooming Brush
-CT106,耳そうじシート 40枚,Ear Wipes 40p
-CT107,デンタルジェル 50ml,Dental Gel 50ml
-CT108,毛玉ケアジェル 60g,Hairball Care Gel 60g
-CH101,猫用マルチビタミン 180粒,Multivitamin 180ct
-CH102,毛玉ケアパウダー 180回分,Hairball Care Powder 180 servings
-CH103,関節ケアコラーゲン 250g,Joint Collagen 250g
-CH104,オメガ3ソフトカプセル 120粒,Omega-3 Softgel 120ct
-CH105,鉄分＋葉酸タブレット 90粒,Iron + Folate 90ct
-CH106,腸内フローラ乳酸菌 60粒,Probiotic 60ct
-CS101,かつおチップス 200g,Bonito Chips 200g
-CS102,ささみチップス 200g,Chicken Chips 200g
-CS103,またたびスティック 30本,Matatabi Sticks 30p
-CS104,減塩にぼし 500g,Dried Sardines 500g
-CS105,ミルク仕立ておやつ 300g,Milky Treat Mix 300g
+﻿商品コード,商品名称,商品名称_EN,原価
+CE101,しつけ教室チケット A,Training Class Ticket A,890
+CE102,しつけ教室チケット S,Training Class Ticket S,2040
+CE103,グルーミング講座,Grooming Workshop,1140
+CE104,オンライン相談パス,Online Consult Pass,660
+CE105,年間メンバーパス,Annual Member Pass,1490
+CF101,総合栄養食 まぐろ 500g,Complete Diet Tuna 500g,6600
+CF102,総合栄養食 まぐろ 100g,Complete Diet Tuna 100g,540
+CF103,陶器のごはん皿 S,Ceramic Bowl S,910
+CF104,給水器フィルター,Water Fountain Filter,700
+CF105,竹のフードスクープ,Bamboo Food Scoop,540
+CF106,フードストッカー 1L,Food Storage Jar 1L,2090
+CT101,肉球バーム 100g,Paw Balm 100g,660
+CT102,肉球バーム 10g,Paw Balm 10g,2720
+CT103,被毛ケアローション 190ml,Coat Care Lotion 190ml,660
+CT104,もこもこ泡シャンプー 300ml,Foaming Shampoo 300ml,3920
+CT105,ふわもこブラシ,Grooming Brush,1190
+CT106,耳そうじシート 40枚,Ear Wipes 40p,3920
+CT107,デンタルジェル 50ml,Dental Gel 50ml,660
+CT108,毛玉ケアジェル 60g,Hairball Care Gel 60g,390
+CH101,猫用マルチビタミン 180粒,Multivitamin 180ct,340
+CH102,毛玉ケアパウダー 180回分,Hairball Care Powder 180 servings,580
+CH103,関節ケアコラーゲン 250g,Joint Collagen 250g,340
+CH104,オメガ3ソフトカプセル 120粒,Omega-3 Softgel 120ct,340
+CH105,鉄分＋葉酸タブレット 90粒,Iron + Folate 90ct,450
+CH106,腸内フローラ乳酸菌 60粒,Probiotic 60ct,4200
+CS101,かつおチップス 200g,Bonito Chips 200g,6000
+CS102,ささみチップス 200g,Chicken Chips 200g,2490
+CS103,またたびスティック 30本,Matatabi Sticks 30p,1900
+CS104,減塩にぼし 500g,Dried Sardines 500g,640
+CS105,ミルク仕立ておやつ 300g,Milky Treat Mix 300g,490

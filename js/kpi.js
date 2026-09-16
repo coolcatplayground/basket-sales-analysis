@@ -6,6 +6,13 @@
  * specification; where the two disagree, the workbook is right.
  *
  * Knows nothing about the DOM — app.js renders whatever this returns.
+ *
+ * V3 additions, ported from the production workbook's Power Query layer rather than from
+ * the demo workbook (which still carries the V2 logic):
+ *   - several product codes at once, and ① filtered to them (KPI1_SUMMARY / KPI1_MONTHLY)
+ *   - median and shortest days to return, and average tracking days (KPI2_全体サマリー)
+ *   - repeat rate by time band, counting only members tracked long enough (KPI2_BAND)
+ *   - the LTV curve and allowable CAC at 3:1 over a separate cohort window (LTV_SUMMARY)
  */
 (function (global) {
   'use strict';
@@ -63,6 +70,30 @@
 
   function dayNumber(dateInt) {
     return serial(ymd(dateInt));
+  }
+
+  /*
+   * 商品コード — "All", one code, or several separated by commas ("CT101, ct102").
+   * Returns null for the whole catalogue, otherwise the set of upper-cased codes, the same
+   * Text.Split / Text.Trim / Text.Upper the query applies before building its IN (...).
+   */
+  function parseCodes(productCode) {
+    var raw = Array.isArray(productCode) ? productCode.join(',') : String(productCode || 'All');
+    if (raw.trim().toUpperCase() === 'ALL') return null;
+    var set = new Set();
+    raw.split(',').forEach(function (c) {
+      var code = c.trim().toUpperCase();
+      if (code) set.add(code);
+    });
+    return set.size ? set : null;
+  }
+
+  /* List.Median: the middle value, or the mean of the middle two. */
+  function median(values) {
+    if (!values.length) return null;
+    var v = values.slice().sort(function (a, b) { return a - b; });
+    var mid = v.length >> 1;
+    return v.length % 2 ? v[mid] : (v[mid - 1] + v[mid]) / 2;
   }
 
   /* ---------- base pass: everything independent of the parameters -------- */
@@ -147,8 +178,11 @@
     var rows = base.rows;
     var start = params.start;
     var end = params.end;
-    var pc = String(params.productCode || 'All').toUpperCase();
-    var isAll = pc === 'ALL';
+    var codes = parseCodes(params.productCode);
+    var isAll = codes === null;
+    /* 追跡日数 runs to "today" — GETDATE() in the query; the caller passes it in. */
+    var asOf = params.asOf || end;
+    var asOfDay = dayNumber(asOf);
     var i;
 
     /* T 期間内, AF 対象商品行 */
@@ -156,7 +190,7 @@
     var targetLine = new Array(rows.length);
     for (i = 0; i < rows.length; i++) {
       inPeriod[i] = rows[i].saleDate >= start && rows[i].saleDate <= end ? 1 : 0;
-      targetLine[i] = isAll || rows[i].code.toUpperCase() === pc ? 1 : 0;
+      targetLine[i] = isAll || codes.has(rows[i].code.toUpperCase()) ? 1 : 0;
     }
 
     /*
@@ -187,6 +221,8 @@
         repeated: repeated,
         /* I 経過日数 — only meaningful for a member who came back. */
         days: repeated ? dayNumber(m.second.date) - dayNumber(m.first.date) : null,
+        /* 追跡日数 — how long this member has been watchable since their first order. */
+        tracked: qualifies ? asOfDay - dayNumber(m.first.date) : null,
         /* K TOP10_2ND資格 — qualified AND acquired inside the period. */
         top2nd: qualifies && firstInPeriod
       });
@@ -202,12 +238,20 @@
     var firstSeenExisting = new Array(rows.length);
     var cumPeriod = 0, cumMonth = 0, cumNew = 0, cumExisting = 0;
 
+    /*
+     * V3: ① takes the product filter too — KPI1_SUMMARY's WHERE carries the same
+     * 商品コード IN (...) as the basket. In V2 it was a period filter over the whole
+     * catalogue. So a row counts for ① when it is in the period AND is a target line.
+     */
+    var inKpi1 = new Array(rows.length);
+    for (i = 0; i < rows.length; i++) inKpi1[i] = inPeriod[i] * targetLine[i];
+
     for (i = 0; i < rows.length; i++) {
       var row = rows[i];
       var prev = i > 0 ? rows[i - 1] : null;
       var memberChanged = !prev || row.memberId !== prev.memberId;
       var monthChanged = memberChanged || row.fiscal !== prev.fiscal;
-      var t = inPeriod[i];
+      var t = inKpi1[i];
       var tNew = t * row.isNew;
       var tExisting = t * (1 - row.isNew);
 
@@ -234,9 +278,11 @@
     }
 
     return {
-      summary: kpi1Summary(rows, inPeriod, firstSeenPeriod, firstSeenNew, firstSeenExisting),
-      monthly: kpi1Monthly(rows, inPeriod, firstSeenMonth, start, end),
+      summary: kpi1Summary(rows, inKpi1, firstSeenPeriod, firstSeenNew, firstSeenExisting),
+      monthly: kpi1Monthly(rows, inKpi1, firstSeenMonth, start, end),
       cohorts: kpi2Summary(memberState),
+      bands: kpi2Bands(memberState),
+      ltv: ltvSummary(base, orderHasTarget, params, asOfDay),
       top1st: topProducts(rows, flag1st, params.products),
       top2nd: topProducts(rows, flag2nd, params.products)
     };
@@ -317,38 +363,42 @@
     });
   }
 
-  /* KPI2_SUMMARY — the 合計 row plus one row per registration-month cohort. */
+  /*
+   * KPI2_SUMMARY — one row per registration-month cohort, plus the 合計 row, which is
+   * KPI2_全体サマリー in V3 (it adds the median, the shortest return and tracking days).
+   */
   function kpi2Summary(memberState) {
-    var total = { label: '合計', acquired: 0, repeated: 0, daysSum: 0, daysCount: 0 };
+    function blank(label) {
+      return { label: label, acquired: 0, repeated: 0, days: [], trackedSum: 0 };
+    }
+    var total = blank('合計');
     var byCohort = new Map();
 
     memberState.forEach(function (m) {
       if (!m.qualifies) return;
-      if (!byCohort.has(m.regFiscal)) {
-        byCohort.set(m.regFiscal, {
-          label: m.regFiscal, acquired: 0, repeated: 0, daysSum: 0, daysCount: 0
-        });
-      }
+      if (!byCohort.has(m.regFiscal)) byCohort.set(m.regFiscal, blank(m.regFiscal));
       var c = byCohort.get(m.regFiscal);
-      c.acquired += 1;
-      total.acquired += 1;
-      if (m.repeated) {
-        c.repeated += 1;
-        total.repeated += 1;
-        c.daysSum += m.days;
-        c.daysCount += 1;
-        total.daysSum += m.days;
-        total.daysCount += 1;
-      }
+      [c, total].forEach(function (x) {
+        x.acquired += 1;
+        x.trackedSum += m.tracked;
+        if (m.repeated) {
+          x.repeated += 1;
+          x.days.push(m.days);
+        }
+      });
     });
 
     function finish(c) {
+      var sum = c.days.reduce(function (a, b) { return a + b; }, 0);
       return {
         label: c.label,
         acquired: c.acquired,
         repeated: c.repeated,
         repeatRate: c.acquired ? c.repeated / c.acquired : 0,
-        avgDays: c.daysCount ? c.daysSum / c.daysCount : 0
+        avgDays: c.days.length ? sum / c.days.length : 0,
+        medianDays: median(c.days),
+        minDays: c.days.length ? Math.min.apply(null, c.days) : null,
+        avgTracked: c.acquired ? c.trackedSum / c.acquired : null
       };
     }
 
@@ -357,6 +407,138 @@
       .map(finish);
 
     return { total: finish(total), rows: rows };
+  }
+
+  /*
+   * KPI2_BAND — repeat rate within 30 / 90 / 180 / 365 / 730 days, then lifetime.
+   *
+   * The denominator is the point. A member who first bought 40 days ago cannot yet show
+   * whether they return within 90, so counting them would drag the 90-day rate down for
+   * reasons that have nothing to do with the product. Each band therefore counts only the
+   * members whose 追跡日数 already covers it (打ち切り対策 — right-censoring). The lifetime
+   * row has no horizon, so it takes everyone.
+   */
+  var BANDS = [30, 90, 180, 365, 730];
+
+  function kpi2Bands(memberState) {
+    var qualified = [];
+    memberState.forEach(function (m) { if (m.qualifies) qualified.push(m); });
+
+    var out = BANDS.map(function (b) {
+      var eligible = 0, repeated = 0;
+      qualified.forEach(function (m) {
+        if (m.tracked < b) return;
+        eligible += 1;
+        if (m.days !== null && m.days <= b) repeated += 1;
+      });
+      return { band: b, eligible: eligible, repeated: repeated,
+               repeatRate: eligible ? repeated / eligible : null };
+    });
+
+    var rep = qualified.filter(function (m) { return m.repeated; }).length;
+    out.push({ band: null, eligible: qualified.length, repeated: rep,
+               repeatRate: qualified.length ? rep / qualified.length : null });
+    return out;
+  }
+
+  /*
+   * LTV_BASE → LTV_粗利 → LTV_SUMMARY.
+   *
+   * The cohort is the same qualifying first order as ②, but read over its own window —
+   * CohortStart..CohortEnd, on the first purchase date — because a lifetime value needs
+   * customers old enough to have a lifetime. For each of them, every completed or returned
+   * line from the first purchase onward is bucketed by days since that first purchase and
+   * turned into gross profit: signed revenue minus unit cost × signed units.
+   *
+   * Per bucket: gross profit, revenue, members who bought in it, and lines with no cost on
+   * the master. Then the running total, divided by every acquired member (not just the ones
+   * who bought in the bucket — a member who never came back still cost what it cost to
+   * acquire), and a third of that: the most one acquisition may cost at a 3:1 LTV:CAC.
+   *
+   * Unlike the query, every bucket is always returned. Table.Group drops an empty bucket,
+   * which in the dashboard's INDEX(..., 3) lookups would silently shift 365 into 730.
+   */
+  var LTV_BUCKETS = [90, 180, 365, 730, null];
+
+  function bucketOf(days) {
+    for (var k = 0; k < 4; k++) if (days <= LTV_BUCKETS[k]) return k;
+    return 4;
+  }
+
+  function ltvSummary(base, orderHasTarget, params, asOfDay) {
+    var cStart = params.cohortStart || params.start;
+    var cEnd = params.cohortEnd || params.end;
+    var cost = new Map();
+    (params.products || []).forEach(function (p) {
+      var c = p.cost;
+      cost.set(p.code.toUpperCase(),
+               c === undefined || c === null || c === '' || isNaN(+c) ? null : +c);
+    });
+
+    var buckets = LTV_BUCKETS.map(function (b) {
+      return { bucket: b, grossProfit: 0, revenue: 0, buyers: new Set(), missingCost: 0 };
+    });
+    var acquired = new Set();
+
+    base.members.forEach(function (m) {
+      if (!m.first || orderHasTarget.get(m.first.orderNo) !== true) return;
+      if (m.first.date < cStart || m.first.date > cEnd) return;
+      var firstDay = dayNumber(m.first.date);
+
+      /* group by (bucket, product), exactly the grain LTV_BASE returns */
+      var groups = new Map();
+      m.rows.forEach(function (idx) {
+        var r = base.rows[idx];
+        if (r.status !== '11' && r.status !== '14') return;
+        if (r.saleDate < m.first.date) return;
+        var k = bucketOf(dayNumber(r.saleDate) - firstDay);
+        var key = k + '|' + r.code.toUpperCase();
+        if (!groups.has(key)) groups.set(key, { k: k, code: r.code.toUpperCase(), rev: 0, qty: 0 });
+        var g = groups.get(key);
+        g.rev += r.sgnAmount;
+        g.qty += r.sgnQty;
+      });
+
+      groups.forEach(function (g) {
+        var unit = cost.has(g.code) ? cost.get(g.code) : null;
+        var b = buckets[g.k];
+        b.grossProfit += g.rev - (unit === null ? 0 : unit) * g.qty;
+        b.revenue += g.rev;
+        b.buyers.add(m.id);
+        if (unit === null) b.missingCost += 1;
+        acquired.add(m.id);
+      });
+    });
+
+    var n = acquired.size;
+    var running = 0;
+    var rows = buckets.map(function (b) {
+      running += b.grossProfit;
+      var perMember = n ? running / n : null;
+      return {
+        bucket: b.bucket,
+        grossProfit: b.grossProfit,
+        revenue: b.revenue,
+        buyers: b.buyers.size,
+        missingCost: b.missingCost,
+        cumulativeGrossProfit: running,
+        perMember: perMember,
+        allowableCac: perMember === null ? null : perMember / 3
+      };
+    });
+
+    /* LTV成熟度チェック — how far the cohort's newest member can be read. */
+    var sinceEnd = asOfDay - dayNumber(cEnd);
+    var readableTo = sinceEnd >= 730 ? 730 : sinceEnd >= 365 ? 365 : sinceEnd >= 180 ? 180 : 0;
+
+    return {
+      cohortStart: cStart,
+      cohortEnd: cEnd,
+      acquired: n,
+      daysSinceCohortEnd: sinceEnd,
+      readableTo: readableTo,
+      rows: rows
+    };
   }
 
   /*
@@ -497,6 +679,10 @@
     buildBase: buildBase,
     compute: compute,
     productScan: productScan,
+    parseCodes: parseCodes,
+    median: median,
+    BANDS: BANDS,
+    LTV_BUCKETS: LTV_BUCKETS,
     fiscalLabel: fiscalLabel,
     fiscalYM: fiscalYM,
     monthLabel: monthLabel,

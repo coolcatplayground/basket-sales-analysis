@@ -70,9 +70,10 @@ def dump_dom(chrome, url):
         shutil.rmtree(profile, ignore_errors=True)
 
 
-# Each case: a description, and the strings the rendered page must contain.
+# Each case: a query string, and the strings the rendered page must contain. Nothing here
+# depends on today's date, which the tracking days and the band denominators do.
 CASES = [
-    ('ja', [
+    ('lang=ja', [
         ('the roll-up heading', '売上集計'),
         ('the revenue tile', '¥25,258,140'),
         # the first month row is 25_02, not an empty 25_01 — the workbook's own seeding
@@ -83,13 +84,24 @@ CASES = [
         ('the product comparison heading', '商品別 獲得力'),
         ('the callout naming the outlier', 'CT108'),
         ('the export contract header', '月別推移'),
+        ('the time-band table', '生涯（期間無制限）'),
+        ('the LTV heading', 'LTV 解析'),
+        ('90-day cumulative gross profit per member', '¥11,430'),
+        ('365-day allowable CAC', '¥5,377'),
     ]),
-    ('en', [
+    ('lang=ja&product=CT101,CT102', [
+        # V3: the roll-up follows the product filter, so this is not the catalogue total
+        ('the two-product revenue tile', '¥2,343,550'),
+        ('the picker summary', '2 商品を選択中'),
+    ]),
+    ('lang=en', [
         ('the roll-up heading', 'Sales roll-up'),
         ('the revenue tile', '¥25,258,140'),
         ('an English product name', 'Ear Wipes 40p'),
         ('the comparison column', 'Customers acquired'),
         ('the export contract header', '月別推移'),
+        ('the LTV heading', 'Lifetime value'),
+        ('the band header', 'Members trackable'),
     ]),
 ]
 
@@ -111,8 +123,9 @@ def main():
     failures = []
 
     try:
-        for lang, expectations in CASES:
-            dom, code, err = dump_dom(chrome, url + '?lang=' + lang)
+        for query, expectations in CASES:
+            lang = query
+            dom, code, err = dump_dom(chrome, url + '?' + query)
             if not dom.strip():
                 # say why, so a CI failure does not need a local reproduction
                 failures.append('%s: the browser returned no DOM (exit %s)%s'

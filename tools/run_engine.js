@@ -41,13 +41,20 @@ const orders = parseCsv(fs.readFileSync(path.join(base, 'data', 'orders_demo.csv
   }));
 
 const products = parseCsv(fs.readFileSync(path.join(base, 'data', 'products_demo.csv'), 'utf8'))
-  .map((r) => ({ code: r['商品コード'], name: r['商品名称'] }));
+  .map((r) => ({
+    code: r['商品コード'], name: r['商品名称'],
+    cost: r['原価'] === undefined || r['原価'] === '' ? null : +r['原価']
+  }));
 
 const kpiBase = KPI.buildBase(orders);
 const out = {};
 for (const s of scenarios) {
+  /* noCost blanks a product's cost, so the missing-cost path is exercised too */
+  const noCost = new Set(s.noCost || []);
+  const prods = products.map((p) => (noCost.has(p.code) ? { ...p, cost: null } : p));
   const r = KPI.compute(kpiBase, {
-    start: s.start, end: s.end, productCode: s.product, products: products
+    start: s.start, end: s.end, productCode: s.product, products: prods,
+    asOf: s.asOf, cohortStart: s.cohortStart, cohortEnd: s.cohortEnd
   });
   out[s.label] = {
     summary: r.summary,
@@ -57,6 +64,8 @@ for (const s of scenarios) {
       existingCustomers: m.existingCustomers
     })),
     cohorts: r.cohorts,
+    bands: r.bands,
+    ltv: r.ltv,
     top1st: r.top1st.map((e) => ({
       code: e.code, name: e.name, lines: e.lines, revenue: e.revenue
     })),
