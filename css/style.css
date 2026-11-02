@@ -1,260 +1,231 @@
 /* --------------------------------------------------------------------------
-   Tokens. Light values live on bare :root; the dark values are declared twice —
-   once for the OS setting, once for an explicit stamp — so neither can win by
-   accident.
+   Design language shared with the Seasonal Analyzer (THD Sales Ledger), so the
+   two tools in this pipeline read as one body of work: paper ground with a
+   hairline grid, flat white cards, 3px corners, ink rules, monospaced figures.
+
+   Light only, deliberately — the analyzer has no dark mode, and a bespoke dark
+   theme here would make the pair diverge for anyone whose OS is set to dark.
    -------------------------------------------------------------------------- */
 :root {
   color-scheme: light;
-  --plane:          #f9f9f7;
-  --surface-1:      #fcfcfb;
-  --surface-2:      #f2f1ed;
-  --text-primary:   #0b0b0b;
-  --text-secondary: #52514e;
-  --text-muted:     #898781;
-  --grid:           #e1e0d9;
-  --axis:           #c3c2b7;
-  --border:         rgba(11, 11, 11, 0.10);
-  --series-1:       #2a78d6;
-  --series-2:       #eb6834;
-  --accent-soft:    rgba(42, 120, 214, 0.10);
-  --shadow:         0 1px 2px rgba(11, 11, 11, 0.05);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --plane:          #0d0d0d;
-    --surface-1:      #1a1a19;
-    --surface-2:      #232322;
-    --text-primary:   #ffffff;
-    --text-secondary: #c3c2b7;
-    --text-muted:     #898781;
-    --grid:           #2c2c2a;
-    --axis:           #383835;
-    --border:         rgba(255, 255, 255, 0.10);
-    --series-1:       #3987e5;
-    --series-2:       #d95926;
-    --accent-soft:    rgba(57, 135, 229, 0.16);
-    --shadow:         none;
-  }
-}
+  --paper:        #EEF1EF;
+  --surface:      #FFFFFF;
+  --ink:          #16232B;
+  --ink-soft:     #4B5A62;
+  --line:         #D6DCD8;
+  --line-soft:    #E4E8E5;
+  --danger:       #9B3B32;
 
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --plane:          #0d0d0d;
-  --surface-1:      #1a1a19;
-  --surface-2:      #232322;
-  --text-primary:   #ffffff;
-  --text-secondary: #c3c2b7;
-  --text-muted:     #898781;
-  --grid:           #2c2c2a;
-  --axis:           #383835;
-  --border:         rgba(255, 255, 255, 0.10);
-  --series-1:       #3987e5;
-  --series-2:       #d95926;
-  --accent-soft:    rgba(57, 135, 229, 0.16);
-  --shadow:         none;
+  /* the analyzer's verdict colours, reused here as the two chart series */
+  --seasonal:     #2F6F5E;
+  --seasonal-bg:  #E3EEEA;
+  --campaign:     #A8791C;
+  --campaign-bg:  #F3EBD9;
+  --mixed:        #6B5B73;
+
+  /* names the chart code reads; kept so js/charts.js needs no edit */
+  --surface-1:      var(--surface);
+  --surface-2:      #F6F8F7;
+  --text-primary:   var(--ink);
+  --text-secondary: var(--ink-soft);
+  --text-muted:     #6E7A80;
+  --grid:           var(--line-soft);
+  --axis:           var(--line);
+  --border:         var(--line);
+  --series-1:       var(--seasonal);
+  --series-2:       var(--campaign);
+  --accent-soft:    var(--seasonal-bg);
+
+  --font-display: 'Zen Kaku Gothic New', 'Noto Sans JP', system-ui, sans-serif;
+  --font-body:    'Noto Sans JP', 'Zen Kaku Gothic New', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --radius: 3px;
 }
 
 * { box-sizing: border-box; }
 
-body {
+html, body {
   margin: 0;
-  background: var(--plane);
-  color: var(--text-primary);
-  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans",
-               "Noto Sans JP", Meiryo, sans-serif;
-  font-size: 15px;
-  line-height: 1.65;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.75;
+  /* the field-notebook grid, 28px, same as the analyzer */
+  background-image:
+    linear-gradient(var(--line-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+  background-size: 28px 28px;
   -webkit-font-smoothing: antialiased;
 }
 
-.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
+.muted { color: var(--text-muted); }
+
 /* --------------------------------------------------------------------------
-   Header
+   Header — brand mark, title, language toggle
    -------------------------------------------------------------------------- */
-.page-head { padding: 48px 0 28px; border-bottom: 1px solid var(--border); }
-
-.page-head h1 {
-  margin: 16px 0 14px;
-  font-size: clamp(24px, 3.4vw, 34px);
-  line-height: 1.25; font-weight: 640; letter-spacing: -0.01em;
-}
-
-/* No measure cap on body copy: paragraphs run the full content width and wrap
-   where the container ends, rather than breaking short of it. */
-.lede {
-  margin: 0;
-  color: var(--text-secondary); font-size: 15px;
-}
+.page-head { padding: 34px 0 24px; }
 
 .head-top {
-  display: flex; flex-wrap: wrap; gap: 10px;
-  align-items: center; justify-content: flex-end;
+  display: flex; flex-wrap: wrap; gap: 16px;
+  align-items: center; justify-content: space-between;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--ink);
 }
 
-.lang-switch {
-  display: inline-flex;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 2px;
+.brand { display: flex; align-items: center; gap: 14px; }
+
+.brand-mark {
+  font-family: var(--font-display);
+  font-weight: 900; font-size: 16px; letter-spacing: 0.03em;
+  width: 52px; height: 52px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ink); color: var(--paper);
+  border-radius: var(--radius);
 }
+
+.brand-text h1 {
+  font-family: var(--font-display);
+  font-weight: 700; font-size: 18px; margin: 0; letter-spacing: 0.01em;
+  line-height: 1.4;
+}
+.brand-text p { margin: 0; font-size: 12.5px; color: var(--ink-soft); }
+
+/* the analyzer's underline-tab treatment, reused for the language switch */
+.lang-switch { display: flex; gap: 4px; }
 
 .lang-switch button {
-  font: inherit; font-size: 12.5px; font-weight: 500;
-  padding: 5px 14px;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 0; border-radius: 999px;
-  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 13px; font-weight: 500;
+  background: transparent; border: none;
+  padding: 7px 14px; cursor: pointer;
+  color: var(--ink-soft);
+  border-bottom: 2px solid transparent;
+}
+.lang-switch button:hover { color: var(--ink); }
+.lang-switch button[aria-pressed="true"] {
+  color: var(--ink); font-weight: 700;
+  border-bottom-color: var(--seasonal);
 }
 
-.lang-switch button:hover { color: var(--text-primary); }
-
-.lang-switch button[aria-pressed="true"] {
-  background: var(--surface-1);
-  color: var(--text-primary);
-  box-shadow: 0 1px 2px rgba(11, 11, 11, 0.10);
+.lede {
+  margin: 22px 0 0;
+  color: var(--ink-soft); font-size: 14px;
 }
 
 /* --------------------------------------------------------------------------
    Panels
    -------------------------------------------------------------------------- */
-main { padding: 28px 20px 56px; }
+main { padding: 26px 24px 64px; }
 
 .panel {
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 24px;
-  margin-bottom: 20px;
-  box-shadow: var(--shadow);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px;
+  margin-bottom: 18px;
 }
 
-.panel-head { margin-bottom: 20px; }
+.panel-head { margin-bottom: 18px; }
 
 .panel-head h2, .notes h2 {
+  font-family: var(--font-display);
   margin: 0 0 4px;
-  font-size: 19px; font-weight: 620; letter-spacing: -0.005em;
+  font-size: 17px; font-weight: 700; letter-spacing: 0.01em;
 }
 
 .panel-head h2 .num { color: var(--text-muted); font-weight: 500; margin-right: 4px; }
 
 h2 em, h3 em {
-  font-style: normal; font-weight: 450;
+  font-style: normal; font-weight: 500;
   color: var(--text-muted); font-size: 0.76em; margin-left: 8px;
 }
 
-.panel-head p { margin: 0; color: var(--text-secondary); font-size: 14px; }
+.panel-head p { margin: 0; color: var(--ink-soft); font-size: 13px; }
 
-h3 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
-
-.muted { color: var(--text-muted); }
+h3 {
+  font-family: var(--font-display);
+  margin: 0 0 4px; font-size: 14px; font-weight: 700;
+}
 
 /* --------------------------------------------------------------------------
    Controls
    -------------------------------------------------------------------------- */
-.controls { padding: 20px 24px; }
+.controls { padding: 20px 22px; }
 
-.control-row {
-  display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;
-}
+.control-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
 
 .field { display: flex; flex-direction: column; gap: 5px; flex: 0 1 180px; }
 .field-wide { flex: 1 1 280px; }
 
-.field > span {
-  font-size: 12px; font-weight: 600; color: var(--text-secondary);
-}
-.field > span b { font-weight: 600; }
+.field > span { font-size: 11.5px; font-weight: 700; color: var(--ink-soft); }
+.field > span b { font-weight: 700; }
 .field > span em {
-  font-style: normal; font-weight: 400; color: var(--text-muted); margin-left: 5px;
+  font-style: normal; font-weight: 400; color: var(--text-muted);
+  margin-left: 5px; font-family: var(--font-mono); font-size: 0.92em;
 }
 
 input[type="date"], select {
-  font: inherit; font-size: 14px;
+  font-family: var(--font-mono); font-size: 13px;
   padding: 8px 10px;
-  color: var(--text-primary);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   width: 100%;
 }
 input[type="date"]:focus-visible, select:focus-visible,
 button:focus-visible, summary:focus-visible {
-  outline: 2px solid var(--series-1); outline-offset: 2px;
+  outline: 2px solid var(--seasonal); outline-offset: 2px;
 }
 
 .btn-ghost {
-  font: inherit; font-size: 13px;
+  font-family: var(--font-body); font-size: 12.5px; font-weight: 500;
   padding: 8px 14px;
-  color: var(--text-secondary);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   cursor: pointer;
 }
-.btn-ghost:hover { color: var(--text-primary); border-color: var(--axis); }
+.btn-ghost:hover { color: var(--ink); border-color: var(--ink-soft); }
 
-.control-row-sub { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--grid); }
-.control-aside { margin: 0; flex: 1 1 260px; font-size: 12px; color: var(--text-muted); align-self: center; }
-
-/* product picker: several codes at once, like the workbook's "ct101, ct102, cs103" */
-.picker { position: relative; }
-.picker summary {
-  list-style: none; cursor: pointer;
-  font-size: 14px; padding: 8px 30px 8px 10px;
-  color: var(--text-primary); background: var(--surface-2);
-  border: 1px solid var(--border); border-radius: 6px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.btn-primary {
+  font-family: var(--font-body); font-size: 12.5px; font-weight: 700;
+  padding: 8px 14px;
+  color: #fff;
+  background: var(--seasonal);
+  border: 1px solid var(--seasonal);
+  border-radius: var(--radius);
+  cursor: pointer;
 }
-.picker summary::-webkit-details-marker { display: none; }
-.picker summary::after {
-  content: "\25BE"; position: absolute; right: 11px; top: 8px; color: var(--text-muted);
-}
-.picker-panel {
-  position: absolute; z-index: 5; left: 0; right: 0; top: calc(100% + 4px);
-  background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.14); padding: 10px;
-}
-.picker-actions { display: flex; gap: 8px; justify-content: space-between; margin-bottom: 8px; }
-.picker-list { max-height: 300px; overflow-y: auto; display: grid; gap: 2px; }
-.picker-list label {
-  display: flex; gap: 8px; align-items: center;
-  font-size: 13px; padding: 5px 6px; border-radius: 4px; cursor: pointer;
-}
-.picker-list label:hover { background: var(--surface-2); }
-.picker-list code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: var(--text-secondary); }
-
-.band-block { margin: 0 0 24px; }
-#ltv-check.table-note-after { margin: 14px 0 0; }
-.band-block .table-scroll { max-width: 640px; }
-.field-cohort { flex: 0 1 230px; }
-.data-table tr.is-thin td { color: var(--text-muted); }
+.btn-primary:hover { filter: brightness(1.08); }
 
 .control-note, .table-note {
-  margin: 14px 0 0; font-size: 13px; color: var(--text-secondary);
+  margin: 14px 0 0; font-size: 12.5px; color: var(--ink-soft);
 }
 .table-note { margin: 0 0 12px; }
 
 /* --------------------------------------------------------------------------
    Stat tiles
    -------------------------------------------------------------------------- */
-/* Fixed column counts, so eight tiles land as 4+4 rather than 6+2 with a gap. */
 .tiles {
   display: grid; gap: 1px;
   grid-template-columns: repeat(2, 1fr);
-  background: var(--border);
-  border: 1px solid var(--border);
-  border-radius: 8px; overflow: hidden;
-  margin-bottom: 26px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius); overflow: hidden;
+  margin-bottom: 24px;
 }
 
 @media (min-width: 640px) {
@@ -262,24 +233,28 @@ button:focus-visible, summary:focus-visible {
 }
 
 /* margin:0 — a <dl> carries a default block margin that would open a gap between rows */
-.tile { background: var(--surface-1); padding: 14px 16px; margin: 0; }
+.tile { background: var(--surface); padding: 13px 15px; margin: 0; }
 
 .tile dt {
-  margin: 0 0 4px; font-size: 12px; font-weight: 500; color: var(--text-secondary);
+  margin: 0 0 2px; font-size: 11.5px; font-weight: 500; color: var(--ink-soft);
 }
 .tile dd {
-  margin: 0; font-size: 21px; font-weight: 600; letter-spacing: -0.01em;
-  line-height: 1.25;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 19px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3;
 }
-.tile dd .unit { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-left: 2px; }
+.tile dd .unit {
+  font-family: var(--font-body);
+  font-size: 11.5px; font-weight: 500; color: var(--text-muted); margin-left: 3px;
+}
 
 /* --------------------------------------------------------------------------
    Charts
    -------------------------------------------------------------------------- */
-.chart-figure { margin: 0 0 26px; }
+.chart-figure { margin: 0 0 24px; }
 
 .chart-figure figcaption { margin-bottom: 10px; }
-.chart-figure figcaption p { margin: 0; font-size: 13px; color: var(--text-secondary); }
+.chart-figure figcaption p { margin: 0; font-size: 12.5px; color: var(--ink-soft); }
 
 .chart-host { position: relative; width: 100%; }
 .chart-host svg { display: block; width: 100%; height: auto; overflow: visible; }
@@ -287,33 +262,37 @@ button:focus-visible, summary:focus-visible {
 .chart-legend {
   display: flex; gap: 16px; flex-wrap: wrap;
   margin: 0 0 8px; padding: 0; list-style: none;
-  font-size: 12px; color: var(--text-secondary);
+  font-size: 11.5px; color: var(--ink-soft);
 }
 .chart-legend li { display: flex; align-items: center; gap: 6px; }
-.chart-legend .swatch { width: 10px; height: 10px; border-radius: 2px; }
+.chart-legend .swatch { width: 10px; height: 10px; border-radius: 1px; }
 
 .bar-hit { fill: transparent; cursor: default; }
 .bar-hit:hover ~ .bar-band, .bar-band.is-active { fill: var(--accent-soft); }
 
 .chart-tip {
   position: absolute; z-index: 5; pointer-events: none;
-  background: var(--surface-1);
-  border: 1px solid var(--axis);
-  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
   padding: 8px 10px;
-  font-size: 12px; line-height: 1.5;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+  font-size: 11.5px; line-height: 1.6;
+  box-shadow: 0 2px 10px rgba(22, 35, 43, 0.12);
   white-space: nowrap;
   opacity: 0; transition: opacity 0.08s;
 }
 .chart-tip.is-on { opacity: 1; }
-.chart-tip b { display: block; font-size: 12px; margin-bottom: 2px; }
-.chart-tip .row { display: flex; align-items: center; gap: 6px; }
-.chart-tip .row .swatch { width: 8px; height: 8px; border-radius: 2px; }
-.chart-tip .row .v { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 600; }
+.chart-tip b {
+  display: block; font-family: var(--font-mono); font-size: 11.5px; margin-bottom: 3px;
+}
+.chart-tip .row { display: flex; align-items: center; gap: 8px; }
+.chart-tip .row .swatch { width: 8px; height: 8px; border-radius: 1px; }
+.chart-tip .row .v {
+  margin-left: auto; font-family: var(--font-mono); font-weight: 700;
+}
 
 /* --------------------------------------------------------------------------
-   Tables
+   Tables — ink rule under the head, monospaced figures
    -------------------------------------------------------------------------- */
 .table-head {
   display: flex; flex-wrap: wrap; gap: 10px;
@@ -324,152 +303,222 @@ button:focus-visible, summary:focus-visible {
 
 .table-scroll {
   overflow-x: auto;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
 }
 .table-scroll-tall { max-height: 380px; overflow-y: auto; }
+.table-scroll-products { max-height: 560px; overflow-y: auto; }
 
-.data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 
 .data-table th, .data-table td {
-  padding: 8px 12px;
+  padding: 7px 12px;
   text-align: right;
   white-space: nowrap;
-  border-bottom: 1px solid var(--grid);
+  vertical-align: baseline;   /* mono figures and body-face names share one line */
 }
-.data-table th:first-child, .data-table td:first-child { text-align: left; }
-.data-table td { font-variant-numeric: tabular-nums; }
 
 .data-table thead th {
   position: sticky; top: 0; z-index: 1;
-  background: var(--surface-2);
-  color: var(--text-secondary);
-  font-size: 12px; font-weight: 600;
-  text-align: right;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 11.5px; font-weight: 700;
+  border-bottom: 2px solid var(--ink);
 }
-.data-table thead th:first-child { text-align: left; }
-.data-table tbody tr:last-child td { border-bottom: 0; }
-.data-table tbody tr:hover td { background: var(--surface-2); }
+.data-table thead th:first-child, .data-table th:first-child { text-align: left; }
 
-.data-table .zero-row td { color: var(--text-muted); }
+.data-table td {
+  font-family: var(--font-mono);
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--surface);
+}
+.data-table tbody th {
+  font-family: var(--font-mono); font-weight: 700;
+  text-align: left;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--surface);
+}
+.data-table tbody tr:last-child td,
+.data-table tbody tr:last-child th { border-bottom: 0; }
+.data-table tbody tr:hover td,
+.data-table tbody tr:hover th { background: var(--surface-2); }
 
-.rank-table td:nth-child(2) { text-align: left; white-space: normal; min-width: 150px; }
+.data-table .zero-row td, .data-table .zero-row th { color: var(--text-muted); }
+
+/* product names are words, not figures: body face, left-aligned, like the analyzer */
+.rank-table td:nth-child(2),
+#product-table td:nth-child(2) {
+  text-align: left; white-space: normal; min-width: 150px;
+  font-family: var(--font-body);
+}
+.rank-table thead th:nth-child(2),
+#product-table thead th:nth-child(2) { text-align: left; }
 .rank-table .num-col { text-align: right; }
 
-/* the in-cell bar: one series, so one color. margin-left:auto anchors it to the
-   right edge, under the figure it belongs to, since the column is right-aligned. */
+/* the in-cell bar: one series, so one colour; margin-left auto anchors it under
+   the figure it belongs to, since the column is right-aligned */
 .cell-bar {
   display: block; height: 3px; margin-top: 3px; margin-left: auto;
-  border-radius: 2px;
-  background: var(--series-1); opacity: 0.85;
+  border-radius: 1px;
+  background: var(--seasonal); opacity: 0.85;
 }
 
 .top-grid {
   display: grid; gap: 24px;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
-.cohorts { border-top: 1px solid var(--border); padding-top: 16px; }
+.cohorts { border-top: 1px solid var(--line); padding-top: 16px; }
 .cohorts summary {
-  cursor: pointer; font-size: 15px; font-weight: 600;
+  font-family: var(--font-display);
+  cursor: pointer; font-size: 14px; font-weight: 700;
   list-style-position: outside; margin-bottom: 12px;
 }
-.cohorts summary .muted { font-weight: 400; font-size: 13px; }
+.cohorts summary .muted { font-weight: 400; font-size: 12px; }
 
 /* --------------------------------------------------------------------------
    ③ Product comparison
    -------------------------------------------------------------------------- */
-.lead-note {
-  margin: 0 0 22px;
-  font-size: 14px; color: var(--text-secondary);
-}
+.lead-note { margin: 0 0 20px; font-size: 13px; color: var(--ink-soft); }
 
 .callout {
-  margin: 4px 0 22px;
+  margin: 4px 0 20px;
   padding: 12px 14px;
-  font-size: 14px; color: var(--text-primary);
-  background: var(--accent-soft);
-  border-left: 2px solid var(--series-1);
-  border-radius: 0 6px 6px 0;
+  font-size: 13px; color: var(--ink);
+  background: var(--seasonal-bg);
+  border-left: 2px solid var(--seasonal);
+  border-radius: 0 var(--radius) var(--radius) 0;
 }
-
-.btn-primary {
-  font: inherit; font-size: 13px;
-  padding: 8px 14px;
-  color: #fff;
-  background: var(--series-1);
-  border: 1px solid var(--series-1);
-  border-radius: 6px;
-  cursor: pointer;
-}
-.btn-primary:hover { filter: brightness(1.08); }
 
 /* sortable headers */
 .sortable th[data-sort] { cursor: pointer; user-select: none; white-space: nowrap; }
-.sortable th[data-sort]:hover { color: var(--text-primary); }
+.sortable th[data-sort]:hover { color: var(--seasonal); }
 
-.sortable th.is-sorted { color: var(--text-primary); }
+.sortable th.is-sorted { color: var(--seasonal); }
 .sortable th.is-sorted::after {
   content: " \2191";
   font-size: 10px;
 }
 .sortable th.is-sorted.is-desc::after { content: " \2193"; }
 
-/* the table is the point of ③, so give it room rather than a nine-row window */
-.table-scroll-products { max-height: 560px; overflow-y: auto; }
+.data-table tr.is-called-out th[scope="row"] { color: var(--seasonal); font-weight: 700; }
+.data-table td.gap-positive { color: var(--seasonal); font-weight: 700; }
 
-.data-table tr.is-called-out th[scope="row"] { color: var(--series-1); font-weight: 700; }
-.data-table td.gap-positive { color: var(--series-1); font-weight: 600; }
+/* --------------------------------------------------------------------------
+   Multi-product picker, cohort window and the repeat-time bands
+   -------------------------------------------------------------------------- */
+.control-row-sub {
+  margin-top: 14px; padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.control-aside {
+  margin: 0; flex: 1 1 260px;
+  font-size: 12px; color: var(--text-muted); align-self: center;
+}
+
+.field-cohort { flex: 0 1 230px; }
+
+/* several codes at once, like the workbook's "ct101, ct102, cs103" */
+.picker { position: relative; }
+
+.picker summary {
+  list-style: none; cursor: pointer;
+  font-family: var(--font-mono); font-size: 13px;
+  padding: 8px 30px 8px 10px;
+  color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.picker summary::-webkit-details-marker { display: none; }
+.picker summary::after {
+  content: "\25BE"; position: absolute; right: 11px; top: 7px; color: var(--text-muted);
+}
+.picker[open] summary { border-color: var(--ink-soft); }
+
+.picker-panel {
+  position: absolute; z-index: 5; left: 0; right: 0; top: calc(100% + 4px);
+  background: var(--surface);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 18px rgba(22, 35, 43, 0.14);
+  padding: 10px;
+}
+
+.picker-actions {
+  display: flex; gap: 8px; justify-content: space-between; margin-bottom: 8px;
+}
+
+.picker-list { max-height: 300px; overflow-y: auto; display: grid; gap: 1px; }
+.picker-list label {
+  display: flex; gap: 8px; align-items: center;
+  font-size: 12.5px; padding: 5px 6px; border-radius: 2px; cursor: pointer;
+}
+.picker-list label:hover { background: var(--surface-2); }
+.picker-list code {
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-soft);
+  background: transparent; border: 0; padding: 0;
+}
+
+.band-block { margin: 0 0 24px; }
+.band-block .table-scroll { max-width: 640px; }
+
+#ltv-check.table-note-after { margin: 14px 0 0; }
+
+.data-table tr.is-thin td, .data-table tr.is-thin th { color: var(--text-muted); }
 
 /* --------------------------------------------------------------------------
    Notes & footer
    -------------------------------------------------------------------------- */
 .notes dl { margin: 18px 0 0; display: grid; gap: 16px; }
-.notes dt { font-weight: 600; font-size: 14px; margin-bottom: 3px; }
-.notes dd {
-  margin: 0; color: var(--text-secondary); font-size: 14px;
+.notes dt {
+  font-family: var(--font-display);
+  font-weight: 700; font-size: 13.5px; margin-bottom: 3px;
 }
-.notes code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+.notes dd { margin: 0; color: var(--ink-soft); font-size: 13px; }
+.notes code, .page-foot code {
+  font-family: var(--font-mono);
   font-size: 0.88em;
   background: var(--surface-2);
-  padding: 1px 5px; border-radius: 4px;
+  border: 1px solid var(--line-soft);
+  padding: 1px 5px; border-radius: 2px;
 }
 
 .fineprint {
   margin: 22px 0 0; padding-top: 16px;
-  border-top: 1px solid var(--border);
-  font-size: 13px; color: var(--text-muted);
+  border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--text-muted);
 }
 
 .page-foot {
-  border-top: 1px solid var(--border);
-  padding: 22px 0 40px;
-  font-size: 13px; color: var(--text-muted);
+  border-top: 2px solid var(--ink);
+  margin: 0 24px;
+  padding: 18px 0 44px;
+  font-size: 12.5px; color: var(--text-muted);
 }
+.page-foot .wrap { padding: 0; }
 .page-foot p { margin: 0; }
-.page-foot code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.9em;
-}
 
 #error-banner {
-  background: #d03b3b; color: #fff;
-  padding: 12px 20px; font-size: 14px;
+  background: var(--danger); color: #fff;
+  padding: 12px 24px; font-size: 13px;
 }
-#error-banner code { font-family: ui-monospace, Menlo, Consolas, monospace; }
+#error-banner code { font-family: var(--font-mono); background: transparent; border: 0; }
 
 main[aria-busy="true"] .panel { opacity: 0.45; }
 
 .is-loading {
-  padding: 40px 0; text-align: center; color: var(--text-muted); font-size: 14px;
+  padding: 40px 0; text-align: center; color: var(--text-muted); font-size: 13px;
 }
 
 @media (max-width: 620px) {
-  .panel { padding: 18px 16px; }
-  .tile dd { font-size: 18px; }
-  .data-table th, .data-table td { padding: 7px 10px; }
+  .panel { padding: 16px 14px; }
+  .wrap, main { padding-left: 16px; padding-right: 16px; }
+  .page-foot { margin: 0 16px; }
+  .tile dd { font-size: 17px; }
+  .data-table th, .data-table td { padding: 6px 10px; }
+  .brand-mark { width: 44px; height: 44px; font-size: 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

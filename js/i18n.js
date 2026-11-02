@@ -19,6 +19,7 @@
       langLabel: '表示言語',
 
       h1: 'EC 売上集計 ＆ カゴ（バスケット）分析',
+      brandSub: '初回購入カゴ分析 — ライブデモ（合成データ）',
       lede: '売上 KPI と初回購入のカゴ分析。本番版は SQL Server 上で Power Query・Power Pivot・' +
             'VBA を介して動きますが、このページは同じ計算をブラウザ内でデモ用データに対して' +
             '実行します。Excel を開かずに、条件を変えて数字が動くのを確かめられます。',
@@ -217,6 +218,7 @@
       langLabel: 'Language',
 
       h1: 'EC Sales KPIs & First-Purchase Basket Analysis',
+      brandSub: 'First-purchase basket analysis — live demo on synthetic data',
       lede: 'Sales KPIs and first-purchase basket analysis. The real tool runs on SQL Server ' +
             'through Power Query, Power Pivot and VBA; this page runs the same calculations in ' +
             'the browser over the demo dataset, so you can change the parameters and watch the ' +

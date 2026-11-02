@@ -421,12 +421,14 @@
 
     var legend = $('scatter-legend');
     legend.textContent = '';
-    [[t('k3LegendHi'), 'var(--series-1)'], [t('k3LegendRest'), 'var(--text-muted)']]
+    // the muted swatch takes the same 0.55 opacity the muted dots are drawn at
+    [[t('k3LegendHi'), 'var(--series-1)', 1], [t('k3LegendRest'), 'var(--text-muted)', 0.55]]
       .forEach(function (pair) {
         var li = document.createElement('li');
         var sw = document.createElement('span');
         sw.className = 'swatch';
         sw.style.background = pair[1];
+        sw.style.opacity = pair[2];
         li.appendChild(sw);
         li.appendChild(document.createTextNode(pair[0]));
         legend.appendChild(li);
